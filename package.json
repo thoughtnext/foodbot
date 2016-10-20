@@ -1,0 +1,32 @@
+{
+  "name": "wit-bot",
+  "version": "4.1.0",
+  "description": "Wit.ai Node.js SDK",
+  "keywords": [
+    "wit",
+    "wit.ai",
+    "bot",
+    "botengine",
+    "bots",
+    "nlp",
+    "automation"
+  ],
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": "https://github.com/wit-ai/node-wit",
+  "author": "The Wit Team <help@wit.ai>",
+  "dependencies": {
+    "firebase": "^2.4.2",
+    "isomorphic-fetch": "^2.2.1",
+    "moment": "^2.15.1",
+    "mysql": "^2.11.1",
+    "node-uuid": "^1.4.7",
+    "node-wit": "^4.1.0",
+    "q": "^1.4.1"
+  },
+  "engines": {
+    "node": ">=4.0.0"
+  }
+}
