@@ -152,33 +152,95 @@
 
   //==================== Postback Section ============================================================================
   function HandlePostback(payload, sessionId) {
-    //const sender_id=sessions[sessionId].fbid;
 
     if (payload.toString() == "new_order") {
       console.log("\n[messenger.js - 155] == new order\n");
       CreateNewOrder(sessionId);
-    } else if (payload.toString() == "old_order") {
+    }
+
+    //
+    else if (payload.toString() == "old_order") {
       console.log("\n[messenger.js - 158] ==old order\n");
-    } else if (payload.toString().indexOf('Restaurant_Selected') != -1) {
-      //get the restaurant id
+    }
+
+    /**
+     * Displaying Quick Replies.
+     * @function 
+     * Extract the restaurant id and call the function
+     */
+    else if (payload.toString().indexOf('Restaurant_Selected') != -1) {
       var index = payload.indexOf("-");
       var RestaurantId = payload.slice(index + 1, payload.length);
       getCategoriesForRestaurants(sessionId, RestaurantId);
-    } else if (payload.toString().indexOf('Category_Selected') != -1) {
+    }
+
+    /**
+     * Display Menu items carousel.
+     * @function 
+     * Extract the Category id and call the function
+     * After calling the function, call More Options function for displaying More Options
+     */
+    else if (payload.toString().indexOf('Category_Selected') != -1) {
+
       var index = payload.indexOf('-');
       var CategoryId = payload.slice(index + 1, payload.length);
-
-      getMenuItemsForCategory(sessionId, CategoryId);
+      getMenuItemsForCategory(sessionId, CategoryId)
+        .then(function() {
+          var fbUserID = sessions[sessionId].fbid;
+          moreOptionsQuickReplies(fbUserID, CategoryId);
+        })
     }
-    //if category selected
-    // else if (payload.indexOf('Category_Selected') != -1) {
-    //   var index = payload.indexOf("-")
-    //   var CategoryId = payload.slice(index + 1, payload.length)
-    //   console.log('hi')
-    //   // getMenuItemsForCategory(sessionId, CategoryId);
-    // } 
+    // if Menu Item selected, 
+    // Add item to cart 
+    // After the item is added to the cart
+    // call moreOptionsQuickReplies - More OPtions
+    else if (payload.indexOf('Menu_Item_Selected') != -1) {
+      var index = payload.indexOf("-")
+      var MenuItemId = payload.slice(index + 1, payload.length)
+      console.log('MenuItemId ' + MenuItemId);
+      addItemsToCart(sessionId, MenuItemId)
+        .then(function() {
+          GetCategoryIdFromMenuItemID(MenuItemId).then(function(result) {
+            var CategoryId = result[0].category_id;
+            moreOptionsQuickReplies(sessionId, CategoryId);
+          })
+        })
+    }
+    // if user clicks on add more items Quick reply
+    else if (payload.indexOf('Add_More_Items') != -1) {
+      var index = payload.indexOf("-")
+      var CategoryId = payload.slice(index + 1, payload.length);
+
+      //get restaurant id from category id for displaying categories carousel
+      GetRestaurantIdFromCategoryId(CategoryId)
+        .then(function(result) {
+          var RestaurantId = result[0].restaurant_id;
+          var fbUserID = sessions[sessionId].fbid;
+          getCategoriesForRestaurants(fbUserID, RestaurantId);
+        })
+    } else if (payload.indexOf('Checkout') != -1) {
+      // checkOut();
+    }
+    // else if()
+    else if (payload.indexOf('My_Cart') != -1) {
+      var fbUserID = sessions[sessionId].fbid;
+      showMyCart(fbUserID);
+    }
+    //remove item selected
+    //call function removeItemFromCart
+    else if (payload.indexOf('Remove_item' != -1)) {
+      var index = payload.indexOf("-");
+      var MenuItemId = payload.slice(index + 1, payload.length);
+      var fbUserID = sessionId;
+      GetOrderIdFromFbUserId(fbUserID)
+        .then(function(result) {
+          var OrderId = result[0].id;
+          removeItemFromCart(MenuItemId, OrderId, fbUserID);
+        })
+    }
+    // if no action on payload
     else {
-      console.log('Could not find payload')
+      console.log('Could not find payload');
     }
   }
 
@@ -187,6 +249,8 @@
 
 
   //=================================functions Implementation================================================================
+
+
 
   function checkControlOfChat(sessionId, text) {
 
@@ -281,7 +345,6 @@
           });
       }
     })
-
   }
 
   function getCategoriesForRestaurants(fbUserID, RestaurantId) {
@@ -307,12 +370,12 @@
   }
 
   function getMenuItemsForCategory(fbUserID, CategoryId) {
-    const fb_ID = sessions[fbUserID].fbid;
+    var fb_ID = sessions[fbUserID].fbid;
     return FetchMenuItemsForCategories(CategoryId).then(function(result) {
       if (result.length != 0) {
         var elements = [];
         for (var i = 0; i < 4; i++) {
-          elements[i] = { title: result[i].name, image_url: result[i].image, subtitle: result[i].description, buttons: [{ type: 'postback', payload: 'Menu_Item_Selected-' + result[i].id, title: 'Select Menu Item' }] }
+          elements[i] = { title: result[i].name + ' - $' + result[i].price, image_url: result[i].image, subtitle: result[i].description, buttons: [{ type: 'postback', payload: 'Menu_Item_Selected-' + result[i].id, title: 'Add to Cart' }] }
         }
         var message = fb.carouselMessage(elements);
         return fb.reply(message, fb_ID)
@@ -325,19 +388,126 @@
               err.stack || err
             );
           });
-
-      }
-      else {
+      } else {
         console.log('No menu items selected');
       }
     })
   }
 
+  function moreOptionsQuickReplies(fbUserID, CategoryId) {
+    console.log('moreOptionsQuickReplies ' + CategoryId)
+
+    // More Options After Displaying or clicking of menu items 
+    var addMoreItems = fb.createQuickReplies('Add More Items', 'Add_More_Items-' + CategoryId, 'http://www.babun.io/wp-content/uploads/2016/03/BabunMetaPic-1.png');
+    var checkout = fb.createQuickReplies('Checkout', 'Checkout', 'http://www.babun.io/wp-content/uploads/2016/03/BabunMetaPic-1.png');
+    var myCart = fb.createQuickReplies('My Cart', 'My_Cart', 'http://www.babun.io/wp-content/uploads/2016/03/BabunMetaPic-1.png');
+
+    var quickReplies = [addMoreItems, checkout, myCart];
+    var message = fb.quickReplyMessage('More Options', quickReplies);
+    return fb.reply(message, fbUserID)
+      .then(() => null)
+      .catch((err) => {
+        console.error(
+          'Oops! An error occurred while forwarding the response to fbUserID',
+          fbUserID,
+          ':',
+          err.stack || err
+        );
+      })
+  }
+
+  function addItemsToCart(fbUserID, MenuItemId) {
+    // var fb_ID = sessions[fbUserID].fbid;
+    // get orderId from Menu Id that is passed from Menu Item selected
+    // for adding items to cart
+    // then 
+    // add the item to cart
+    // if error is generated, send a message to fb user 
+    return GetOrderIdFromFbUserId(fbUserID)
+      .then(function(result) {
+        if (result.length != 0) {
+          console.log('result ' + result[0].id);
+          var OrderId = result[0].id;
+          return AddItemsToCart(MenuItemId, OrderId)
+            .then(function() {
+              console.log('\nItem added successfully\n')
+              var message = fb.textMessage('Item added successfully')
+              return fb.reply(message, fbUserID)
+            })
+        } else {
+          var message = fb.textMessage('You have not created any order')
+          fb.reply(message, fbUserID)
+            // add further code
+        }
+      })
+      .then(function() {
+        return GetRestaurantIdFromMenuItemId(MenuItemId)
+      })
+  }
+
+  function showMyCart(fbUserID) {
+    return GetOrderIdFromFbUserId(fbUserID)
+      .then(function(result) {
+        var OrderId = result[0].id
+        return GetMyCart(OrderId)
+      })
+      .then(function(result) {
+        if (result.length != 0) {
+          var elements = [];
+          for (var i = 0; i < result.length; i++) {
+            elements[i] = {
+              title: result[i].name + ' - $' + result[i].price,
+              image_url: result[i].image,
+              subtitle: result[i].description,
+              buttons: [{ type: 'postback', payload: 'Remove_item-' + result[i].id, title: 'Remove from Cart' }]
+            }
+          }
+          console.log(elements)
+          var message = fb.carouselMessage(elements);
+          return fb.reply(message, fbUserID)
+            .then(() => null)
+            .catch((err) => {
+              console.error(
+                'Oops! An error occurred while forwarding the response to fbUserID',
+                fbUserID,
+                ':',
+                err.stack || err
+              );
+            });
+        } else {
+          console.log('Result is throwing error')
+        }
+      })
+      .then(function() {
+        return GetCategoryIdFromFbUserId(fbUserID);
+      })
+      .then(function(result){
+        var CategoryId = result[0].category_id;
+        return moreOptionsQuickReplies(fbUserID, CategoryId);
+      })
+  }
+
+  function removeItemFromCart(MenuItemId, OrderId, fbUserID) {
+    return RemoveItemFromCart(MenuItemId, OrderId)
+      .then(function() {
+        console.log('\nItem removed successfully\n')
+        var message = fb.textMessage('Item removed successfully')
+        return fb.reply(message, fbUserID)
+      })
+      .then(function() {
+        return GetCategoryIdFromMenuItemID(MenuItemId)
+      })
+      .then(function(result) {
+        console.log('\nCategory id ' + result[0].category_id);
+        var CategoryId = result[0].category_id;
+        return moreOptionsQuickReplies(fbUserID, CategoryId)
+      })
+  }
 
   //=================================functions Implementation====================END======================
 
   //===============================Adapter method calls ==========================================
-
+//
 
   function insertNewBotUser(fbUserID) {
     return db.insertBotUser(fbUserID)
@@ -397,7 +567,6 @@
       })
   }
 
-
   function FetchMenuItemsForCategories(CategoryId) {
     return db.fetchMenuItemsForCategories(CategoryId)
       .then(function(result) {
@@ -405,6 +574,86 @@
         return result;
       }, function(error) {
         console.log('\nError in fetching Menu Items for Categories: ' + error)
+      })
+  }
+
+  function AddItemsToCart(ItemId, OrderId) {
+
+    return db.addItemsToCart(ItemId, OrderId)
+      .then(function(result) {
+        return result;
+      }, function(error) {
+        console.log('\nError in Adding Menu Items for Categories: ' + error)
+
+      })
+  }
+
+  function GetOrderIdFromFbUserId(fbUserID) {
+    console.log(fbUserID)
+    return db.getOrderIdFromFbUserId(fbUserID)
+      .then(function(result) {
+        return result;
+      }, function(error) {
+        console.log('\n Error fetching Order Id from FB ID' + error)
+      })
+  }
+
+  function GetRestaurantIdFromMenuItemId(MenuItemId) {
+    return db.getRestaurantIdFromMenuItemId(MenuItemId)
+      .then(function(result) {
+        return result;
+      }, function(error) {
+        console.log('\n Error fetching Restaurant ID from Menu Item ID ' + error);
+      })
+  }
+
+  function GetRestaurantIdFromCategoryId(CategoryId) {
+    return db.getRestaurantIdFromCategoryId(CategoryId)
+      .then(function(result) {
+        return result;
+      }, function(error) {
+        console.log('\nError fetching restaurant id from CategoryId ', error)
+      })
+  }
+
+  function GetMyCart(OrderId) {
+    return db.getMyCart(OrderId)
+      .then(function(result) {
+        return result;
+      }, function(error) {
+        console.log('\nError fetching restaurant id from CategoryId ', error)
+      })
+  }
+
+  function checkOut() {
+
+  }
+
+  function GetCategoryIdFromMenuItemID(MenuItemId) {
+    return db.getCategoryIdFromMenuItemID(MenuItemId)
+      .then(function(result) {
+        console.log(result[0].category_id);
+        return result;
+      }, function(error) {
+        console.log('\nError fetching restaurant id from CategoryId ', error)
+      })
+  }
+
+  function RemoveItemFromCart(MenuItemId, OrderId) {
+    return db.removeItemFromCart(MenuItemId, OrderId)
+      .then(function(result) {
+        return result;
+      }, function(error) {
+        console.log('\nError removing Item From Cart ', error)
+      })
+  }
+
+  function GetCategoryIdFromFbUserId(fbUserID) {
+    return getCategoryIdFromFbUserId(fbUserID)
+      .then(function(result) {
+        return result;
+      }, function(error) {
+        console.log('\nError fetching Category Id  from FB User ID ', error)
       })
   }
 

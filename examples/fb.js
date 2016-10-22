@@ -46,6 +46,7 @@ function createElement(title, subtitle, image, buttons) {
     "title": title,
     "subtitle": subtitle,
     "image_url": (image || "http://www.babun.io/wp-content/uploads/2016/03/BabunMetaPic-1.png"),
+    // "item_url": item_url || '',
     "buttons": buttons
   }
 }
