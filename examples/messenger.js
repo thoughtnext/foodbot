@@ -64,7 +64,10 @@
   // See the Send API reference
   // https://developers.facebook.com/docs/messenger-platform/send-api-reference
 
-
+  function runActions(sessionId) {
+    console.log('runActions - sessionId ' + sessionId)
+    actions.welcome({ sessionId });
+  }
 
 
   // ----------------------------------------------------------------------------
@@ -120,6 +123,9 @@
     },
     welcome({ sessionId }) {
       const fbUserID = sessions[sessionId].fbid;
+      console.log("125 - sessionId - " + sessionId)
+      console.log('126 - fbUserID - ' + fbUserID)
+        // var fbUserID = sessionId
       if (fbUserID) {
         var image1 = "http://s3.amazonaws.com/saveoneverything_assets/assets/images/icons/food_dining_icon.png";
         var image2 = "http://www.tastelikehome.co.za/wp-content/uploads/2015/10/cpg-foods-icon.png";
@@ -152,7 +158,7 @@
 
   //==================== Postback Section ============================================================================
   function HandlePostback(payload, sessionId) {
-
+    console.log('\n\n payload from HandlePostback ' + payload)
     if (payload.toString() == "new_order") {
       console.log("\n[messenger.js - 155] == new order\n");
       CreateNewOrder(sessionId);
@@ -169,6 +175,7 @@
      * Extract the restaurant id and call the function
      */
     else if (payload.toString().indexOf('Restaurant_Selected') != -1) {
+      console.log('payload==restaurant selected')
       var index = payload.indexOf("-");
       var RestaurantId = payload.slice(index + 1, payload.length);
       getCategoriesForRestaurants(sessionId, RestaurantId);
@@ -181,7 +188,7 @@
      * After calling the function, call More Options function for displaying More Options
      */
     else if (payload.toString().indexOf('Category_Selected') != -1) {
-
+      console.log('payload==category selected')
       var index = payload.indexOf('-');
       var CategoryId = payload.slice(index + 1, payload.length);
       getMenuItemsForCategory(sessionId, CategoryId)
@@ -195,6 +202,7 @@
     // After the item is added to the cart
     // call moreOptionsQuickReplies - More OPtions
     else if (payload.indexOf('Menu_Item_Selected') != -1) {
+      console.log('payload==menu selected')
       var index = payload.indexOf("-")
       var MenuItemId = payload.slice(index + 1, payload.length)
       console.log('MenuItemId ' + MenuItemId);
@@ -208,6 +216,7 @@
     }
     // if user clicks on add more items Quick reply
     else if (payload.indexOf('Add_More_Items') != -1) {
+      console.log('payload==add item selected')
       var index = payload.indexOf("-")
       var CategoryId = payload.slice(index + 1, payload.length);
 
@@ -218,17 +227,20 @@
           var fbUserID = sessions[sessionId].fbid;
           getCategoriesForRestaurants(fbUserID, RestaurantId);
         })
-    } else if (payload.indexOf('Checkout') != -1) {
-      // checkOut();
     }
+    //  else if (payload.indexOf('Checkout') != -1) {
+    //   // checkOut();
+    // }
     // else if()
     else if (payload.indexOf('My_Cart') != -1) {
+      console.log('payload==my cart selected')
       var fbUserID = sessions[sessionId].fbid;
       showMyCart(fbUserID);
     }
     //remove item selected
     //call function removeItemFromCart
-    else if (payload.indexOf('Remove_item' != -1)) {
+    else if (payload.indexOf('Remove_item') != -1) {
+      console.log('payload==remove item selected')
       var index = payload.indexOf("-");
       var MenuItemId = payload.slice(index + 1, payload.length);
       var fbUserID = sessionId;
@@ -239,7 +251,21 @@
         })
     }
     // if no action on payload
-    else {
+    else if (payload.indexOf('Continue_cart') != -1) {
+      console.log('Continue_cart')
+      var fbUserID = sessions[sessionId].fbid;
+      showMyCart(fbUserID)
+    } else if (payload.indexOf('Empty_cart') != -1) {
+      console.log('Empty_cart')
+      var fbUserID = sessions[sessionId].fbid;
+      GetOrderIdFromFbUserId(fbUserID)
+        .then(function(result) {
+          var OrderId = result[0].id;
+          console.log('OrderId ' + OrderId)
+          emptyCart(fbUserID, OrderId);
+        })
+        // showMyCart(fbUserID)
+    } else {
       console.log('Could not find payload');
     }
   }
@@ -327,8 +353,8 @@
         //if cart is not empty then prompt user for emptying the cart or carrying on with the cart
         console.log('\n\nYou have a pending order in your cart\n');
         var image1 = "http://s3.amazonaws.com/saveoneverything_assets/assets/images/icons/food_dining_icon.png";
-        var continueCart = fb.createQuickReplies('Continue with cart', 'continue cart', image1)
-        var emptyCart = fb.createQuickReplies('Empty the cart', 'empty cart', image1)
+        var continueCart = fb.createQuickReplies('Continue with cart', 'Continue_cart', image1)
+        var emptyCart = fb.createQuickReplies('Empty the cart', 'Empty_cart', image1)
 
         var qr = [continueCart, emptyCart]
 
@@ -374,7 +400,7 @@
     return FetchMenuItemsForCategories(CategoryId).then(function(result) {
       if (result.length != 0) {
         var elements = [];
-        for (var i = 0; i < 4; i++) {
+        for (var i = 0; i < result.length; i++) {
           elements[i] = { title: result[i].name + ' - $' + result[i].price, image_url: result[i].image, subtitle: result[i].description, buttons: [{ type: 'postback', payload: 'Menu_Item_Selected-' + result[i].id, title: 'Add to Cart' }] }
         }
         var message = fb.carouselMessage(elements);
@@ -418,6 +444,8 @@
 
   function addItemsToCart(fbUserID, MenuItemId) {
     // var fb_ID = sessions[fbUserID].fbid;
+    console.log(fbUserID)
+    console.log(MenuItemId)
     // get orderId from Menu Id that is passed from Menu Item selected
     // for adding items to cart
     // then 
@@ -476,12 +504,16 @@
             });
         } else {
           console.log('Result is throwing error')
+          var message = fb.textMessage('Your cart is empty');
+          return fb.reply(message, fbUserID)
+
+          console.log("There is no item in cart ")
         }
       })
       .then(function() {
         return GetCategoryIdFromFbUserId(fbUserID);
       })
-      .then(function(result){
+      .then(function(result) {
         var CategoryId = result[0].category_id;
         return moreOptionsQuickReplies(fbUserID, CategoryId);
       })
@@ -504,10 +536,41 @@
       })
   }
 
+  function emptyCart(fbUserID, OrderId) {
+    return EmptyCart(OrderId)
+      .then(function() {
+        console.log('Cart is Empty')
+        return FetchRestaurantsList().then(function(result) {
+          console.log('\n\nResults ======= > ' + result);
+          if (result.length != 0) {
+            var elements = []
+            for (var i = 0; i < 2; i++) {
+              elements[i] = { title: result[i].name, image_url: result[i].image, subtitle: result[i].description, buttons: [{ type: 'postback', payload: 'Restaurant_Selected-' + result[i].id, title: 'Select Restaurant' }] }
+            }
+
+            var message = fb.carouselMessage(elements);
+
+            return fb.reply(message, fbUserID)
+              .then(() => null)
+              .catch((err) => {
+                console.error(
+                  'Oops! An error occurred while forwarding the response to fbUserID',
+                  fbUserID,
+                  ':',
+                  err.stack || err
+                );
+              });
+          } else {
+            console.log('No Restaurants listed')
+          }
+        })
+      })
+  }
+
   //=================================functions Implementation====================END======================
 
   //===============================Adapter method calls ==========================================
-//
+  //
 
   function insertNewBotUser(fbUserID) {
     return db.insertBotUser(fbUserID)
@@ -625,9 +688,9 @@
       })
   }
 
-  function checkOut() {
+  // function checkOut() {
 
-  }
+  // }
 
   function GetCategoryIdFromMenuItemID(MenuItemId) {
     return db.getCategoryIdFromMenuItemID(MenuItemId)
@@ -649,7 +712,7 @@
   }
 
   function GetCategoryIdFromFbUserId(fbUserID) {
-    return getCategoryIdFromFbUserId(fbUserID)
+    return db.getCategoryIdFromFbUserId(fbUserID)
       .then(function(result) {
         return result;
       }, function(error) {
@@ -657,6 +720,14 @@
       })
   }
 
+  function EmptyCart(OrderId) {
+    return db.emptyCart(OrderId)
+      .then(function(result) {
+        return result;
+      }, function(error) {
+        console.log('\nError fetching Category Id  from FB User ID ', error)
+      })
+  }
   //===============================Adapter method calls ==================END ========================
 
 
@@ -720,6 +791,7 @@
               // This is needed for our bot to figure out the conversation history
               // else {
             const sessionId = findOrCreateSession(sender);
+            console.log("sessions[sessionId].fbid - " + sessions[sessionId].fbid)
             console.log('[messenger.js] - 471 sessionId ' + JSON.stringify(sessionId))
               // We retrieve the message content
             const { text, attachments, quick_reply } = event.message;
@@ -740,35 +812,40 @@
             } else if (text) {
               // We received a text message
 
-
               // Let's forward the message to the Wit.ai Bot Engine
               // This will run all actions until our bot has nothing left to do
 
               checkControlOfChat(sessionId, text);
+              console.log('run Actions - sessionId - ' + sessionId)
+              if (text == 'Hey' || text == 'Hello' || text == 'Hi') {
+                // var fbUserID = sessions[sessionId].fbid
+                // console.log(fbUserID);
+                runActions(sessionId);
+              } else {
+                console.log('Sorry, I could not understand what you want ! Please input again')
+              }
+              // wit.runActions(
+              //     sessionId, // the user's current session
+              //     text, // the user's message
+              //     sessions[sessionId].context // the user's current session state
+              //   ).then((context) => {
+              //     // Our bot did everything it has to do.
+              //     // Now it's waiting for further messages to proceed.
+              //     console.log('Waiting for next user messages');
 
+              //     // Based on the session state, you might want to reset the session.
+              //     // This depends heavily on the business logic of your bot.
+              //     // Example:
+              //     // if (context['done']) {
+              //     //   delete sessions[sessionId];
+              //     // }
 
-              wit.runActions(
-                  sessionId, // the user's current session
-                  text, // the user's message
-                  sessions[sessionId].context // the user's current session state
-                ).then((context) => {
-                  // Our bot did everything it has to do.
-                  // Now it's waiting for further messages to proceed.
-                  console.log('Waiting for next user messages');
-
-                  // Based on the session state, you might want to reset the session.
-                  // This depends heavily on the business logic of your bot.
-                  // Example:
-                  // if (context['done']) {
-                  //   delete sessions[sessionId];
-                  // }
-
-                  // Updating the user's current session state
-                  sessions[sessionId].context = context;
-                })
-                .catch((err) => {
-                  console.error('Oops! Got an error from Wit: ', err.stack || err);
-                })
+              //     // Updating the user's current session state
+              //     sessions[sessionId].context = context;
+              //   })
+              //   .catch((err) => {
+              //     console.error('Oops! Got an error from Wit: ', err.stack || err);
+              //   })
             }
             // }
           } else {

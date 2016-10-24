@@ -384,7 +384,7 @@ Adapter.prototype.removeItemFromCart  = function(MenuItemId, OrderId){
 }
 
 Adapter.prototype.getCategoryIdFromFbUserId  = function(fbUserId){
-  const query = 'select distinct(menu_items.category_id) from menu_items inner join cart ON cart.menu_item_id = menu_items.id inner join orders ON cart.order_id = orders.id inner join bot_users ON orders.bot_user_id = bot_users.id Where bot_users.fb_id = '+ fbUserId +' 1177902988920350 and orders.status = 0';
+  const query = 'select distinct(menu_items.category_id) from menu_items inner join cart ON cart.menu_item_id = menu_items.id inner join orders ON cart.order_id = orders.id inner join bot_users ON orders.bot_user_id = bot_users.id Where bot_users.fb_id = '+ fbUserId +' and orders.status = 0';
    var deferred = Q.defer();
   this.db.getConnection(function(err, connection) {
     if (err) {
@@ -406,9 +406,31 @@ Adapter.prototype.getCategoryIdFromFbUserId  = function(fbUserId){
   return deferred.promise;
 }
 
+Adapter.prototype.emptyCart  = function(OrderId){
+  const query = 'DELETE FROM cart WHERE order_id = '+ OrderId;
+   var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, rows, fields) {
+        // console.log('Reading query')
+        console.log("\n"+query+"\n")
+        console.log("========================results===================="  + JSON.stringify(rows[0])+ /*rows[0] +*/ '\n')
+        connection.release();
+        if (err) {
+          deferred.reject(err);
+        } else {
+          deferred.resolve(rows);
+        }
+      });
+    }
+  });
+  return deferred.promise;
+}
 
 module.exports = Adapter;
-
+// DELETE FROM cart WHERE order_id =121
 // DELETE FROM cart WHERE menu_item_id =1 AND order_id =167
 
 //------------------------------------------------------------------------------
