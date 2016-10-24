@@ -817,7 +817,8 @@
 
               checkControlOfChat(sessionId, text);
               console.log('run Actions - sessionId - ' + sessionId)
-              if (text == 'Hey' || text == 'Hello' || text == 'Hi') {
+              text=text.toString().toUpperCase();
+              if (text == 'HEY' || text == 'HELLO' || text == 'HI') {
                 // var fbUserID = sessions[sessionId].fbid
                 // console.log(fbUserID);
                 runActions(sessionId);
