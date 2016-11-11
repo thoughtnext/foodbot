@@ -150,21 +150,19 @@ Adapter.prototype.checkForIncompleteOrder = function(userId, status) {
 }
 
 Adapter.prototype.fetchRestaurantsList = function() {
-  const query = 'SELECT * FROM restokit_foodbot.restaurants';
+  const query = 'SELECT * FROM restaurants where isEnabled = 1';
   var deferred = Q.defer();
   this.db.getConnection(function(err, connection) {
     if (err) {
       deferred.reject(err);
     } else {
-      connection.query(query, [], function(err, rows, fields) {
-        // console.log('Reading query')
+      connection.query(query, [], function(err, result) {
         console.log("\n"+query+"\n")
-        // console.log("========================results===================="  + JSON.stringify(rows[0])+ /*rows[0] +*/ '\n')
         connection.release();
         if (err) {
           deferred.reject(err);
         } else {
-          deferred.resolve(rows);
+          deferred.resolve(result);
         }
       });
     }
@@ -173,21 +171,19 @@ Adapter.prototype.fetchRestaurantsList = function() {
 }
 
 Adapter.prototype.fetchCategoriesForRestaurant = function(restaurantId) {
-  const query = 'SELECT * FROM restokit_foodbot.categories where restaurant_id = '+restaurantId;
+  const query = 'SELECT * FROM categories where restaurant_id = '+restaurantId;
   var deferred = Q.defer();
   this.db.getConnection(function(err, connection) {
     if (err) {
       deferred.reject(err);
     } else {
-      connection.query(query, [], function(err, rows, fields) {
-        // console.log('Reading query')
+      connection.query(query, [], function(err, result) {
         console.log("\n"+query+"\n")
-        // console.log("========================results===================="  + JSON.stringify(rows[0])+ /*rows[0] +*/ '\n')
         connection.release();
         if (err) {
           deferred.reject(err);
         } else {
-          deferred.resolve(rows);
+          deferred.resolve(result);
         }
       });
     }
@@ -429,9 +425,410 @@ Adapter.prototype.emptyCart  = function(OrderId){
   return deferred.promise;
 }
 
+Adapter.prototype.getCheckoutDetails  = function(fbUserId){
+  const query = 'SELECT cart.menu_item_id AS menu_item_id, menu_items.name AS name, cart.quantity AS quantity, menu_items.price AS price, (menu_items.price * quantity) AS amount, restaurants.id AS restaurant_id, restaurants.name AS restaurant_name, restaurants.image AS restaurant_image, restaurants.description AS restaurant_subtitle, bot_users.fb_id AS fb_id FROM orders INNER JOIN bot_users  ON bot_users.id = orders.bot_user_id INNER JOIN cart  ON cart.order_id = orders.id INNER JOIN menu_items ON cart.menu_item_id = menu_items.id INNER JOIN categories ON menu_items.category_id = categories.id INNER JOIN restaurants ON categories.restaurant_id = restaurants.id WHERE bot_users.fb_id = '+ fbUserId +' AND orders.status = 0'
+   var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, rows, fields) {
+        // console.log('Reading query')
+        console.log("\n"+query+"\n")
+        console.log("========================results===================="  + JSON.stringify(rows[0])+ /*rows[0] +*/ '\n')
+        connection.release();
+        if (err) {
+          deferred.reject(err);
+        } else {
+          deferred.resolve(rows);
+        }
+      });
+    }
+  });
+  return deferred.promise;
+}
+
+
+
+
+
+Adapter.prototype.fetchRestaurantDetails = function(restaurantId, res) {
+  const query = 'SELECT * FROM restaurants where restaurants.id = '+restaurantId;
+  var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, rows, fields) {
+        // console.log('Reading query')
+        console.log("\n"+query+"\n")
+        // console.log("========================results===================="  + JSON.stringify(rows[0])+ /*rows[0] +*/ '\n')
+        connection.release();
+        if (err) {
+			res.send({ status: 1, message: err });
+          deferred.reject(err);
+        } else {
+			res.send(rows);
+          deferred.resolve(rows);
+        }
+      });
+    }
+  });
+  return deferred.promise;
+}
+
+Adapter.prototype.addRestaurant = function(name, image, description, res) {
+	
+  const query = 'INSERT INTO restaurants (name, image, description) VALUES ('+
+				this.db.escape(name)+', '+ this.db.escape(image) +', '+this.db.escape(description)+');'
+	console.log(query)
+   var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, result) {
+        connection.release();
+        console.log(query);
+        if (err) {
+		res.send({ status: 'error', message: err });
+          deferred.reject(err);
+        } else {
+		res.send({ status: 'success', insertId: result.insertId, restaurant: {name: name, image: image, description: description} });
+          deferred.resolve(result);
+        }
+      });
+    }
+  })
+  return deferred.promise;
+}
+
+Adapter.prototype.editRestaurant = function(id, name, image, description, res) {
+	//UPDATE  restokit_foodbot.restaurants SET  image =  'vg' WHERE  restaurants.id =10;
+  const query = 'UPDATE  restokit_foodbot.restaurants SET name = '+this.db.escape(name)+', image = '+ this.db.escape(image) +', description ='+this.db.escape(description)+' WHERE restaurants.id = ' + id;
+	console.log(query)
+   var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, result) {
+        connection.release();
+        console.log(query);
+        if (err) {
+		res.send({ status: 'error', message: err });
+          deferred.reject(err);
+        } else {
+		res.send({ status: 'success', message: 'Restaurant Updated', restaurant: {name: name, image: image, description: description} });
+          deferred.resolve(result);
+        }
+      });
+    }
+  })
+  return deferred.promise;
+}
+
+
+Adapter.prototype.editRestaurantIsEnabled = function(id, isEnabled, res) {
+  const query = 'UPDATE restaurants SET isEnabled = '+ isEnabled + ' WHERE restaurants.id = ' + id;
+	console.log(query)
+   var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, result) {
+        connection.release();
+        console.log(query);
+        if (err) {
+		res.send({ status: 'error', message: err });
+          deferred.reject(err);
+        } else {
+		res.send({ status: 'success', message: 'Restaurant Updated', isEnabled: isEnabled });
+          deferred.resolve(result);
+        }
+      });
+    }
+  })
+  return deferred.promise;
+}
+
+Adapter.prototype.fetchMenuItemsForCategory = function(categoryId, res) {
+  const query = 'SELECT * FROM restokit_foodbot.menu_items WHERE category_id = '+categoryId;
+  var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, result) {
+        // console.log('Reading query')
+        console.log("\n"+query+"\n")
+        console.log("========================results===================="  + JSON.stringify(result[0])+ '\n')
+        connection.release();
+        if (err) {
+			res.send({status: 'error', message: err})
+			deferred.reject(err);
+        } else {
+			res.send(result)
+			deferred.resolve(result);
+        }
+      });
+    }
+  });
+  return deferred.promise;
+}
+
+Adapter.prototype.fetchRestaurants = function(res) {
+  const query = 'SELECT * FROM restaurants';
+  var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, result) {
+        // console.log('Reading query')
+        console.log("\n"+query+"\n")
+        // console.log("========================results===================="  + JSON.stringify(rows[0])+ /*rows[0] +*/ '\n')
+        connection.release();
+        if (err) {
+			res.send({ status: 'error', message: err });
+          deferred.reject(err);
+        } else {
+			res.send(result);
+          deferred.resolve(result);
+        }
+      });
+    }
+  });
+  return deferred.promise;
+}
+
+Adapter.prototype.fetchCategoriesforRestaurant = function(restaurantId, res) {
+  const query = 'SELECT * FROM categories where restaurant_id = '+restaurantId;
+  var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, result) {
+        // console.log('Reading query')
+        console.log("\n"+query+"\n")
+        // console.log("========================results===================="  + JSON.stringify(rows[0])+ /*rows[0] +*/ '\n')
+        connection.release();
+        if (err) {
+		res.send({ status: 'error', message: err });
+          deferred.reject(err);
+        } else {
+		res.send(result);
+          deferred.resolve(result);
+        }
+      });
+    }
+  });
+  return deferred.promise;
+}
+
+Adapter.prototype.fetchCategoryDetails = function(categoryId, res) {
+  const query = 'SELECT * FROM categories where id = '+categoryId ;
+  var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, result) {
+        console.log("\n"+query+"\n")
+        connection.release();
+        if (err) {
+		res.send({ status: 'error', message: err });
+          deferred.reject(err);
+        } else {
+		res.send(result);
+          deferred.resolve(result);
+        }
+      });
+    }
+  });
+  return deferred.promise;
+}
+
+Adapter.prototype.removeCategory = function(categoryId, res){
+  const query = 'DELETE FROM categories WHERE id = '+categoryId;
+   var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, result) {
+        console.log("\n"+query+"\n")
+        console.log("========================results===================="  + JSON.stringify(result) + '\n')
+        connection.release();
+        if (err) {
+			res.send({ status: 'error', message: err });
+            deferred.reject(err);
+        } else {
+			res.send({ status: 'success', message: 'Category deleted' });
+            deferred.resolve(result);
+        }
+      });
+    }
+  });
+  return deferred.promise;
+}
+
+Adapter.prototype.editCategory = function(id, name, restaurant_id, res) {
+  const query = 'UPDATE categories SET name = '+this.db.escape(name) + ' , image = "http://s3.amazonaws.com/saveoneverything_assets/assets/images/icons/food_dining_icon.png", restaurant_id = '+this.db.escape(restaurant_id)+' WHERE id = '+id;
+	console.log(query)
+   var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, result) {
+        connection.release();
+        console.log(query);
+        if (err) {
+		res.send({ status: 'error', message: err });
+          deferred.reject(err);
+        } else {
+		res.send({ status: 'success', message: 'Category Updated', category: {id: id, name: name, restaurant_id: restaurant_id} });
+          deferred.resolve(result);
+        }
+      });
+    }
+  })
+  return deferred.promise;
+}
+
+Adapter.prototype.addCategory = function( name, restaurant_id, res) {
+	
+  const query = 'INSERT INTO categories (name, image, restaurant_id) VALUES ('+
+				this.db.escape(name)+', "http://s3.amazonaws.com/saveoneverything_assets/assets/images/icons/food_dining_icon.png" , '+ restaurant_id+');'
+	console.log(query)
+   var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, result) {
+        connection.release();
+        console.log(query);
+        if (err) {
+		res.send({ status: 'error', message: err });
+          deferred.reject(err);
+        } else {
+		res.send({ status: 'success', insertId: result.insertId, category: {name: name} });
+          deferred.resolve(result);
+        }
+      });
+    }
+  })
+  return deferred.promise;
+}
+
+Adapter.prototype.addMenuItem = function( name, image, category_id, description, price, res) {
+	
+  const query = 'INSERT INTO menu_items (name, image, category_id, description, price) VALUES ('+
+					this.db.escape(name) + ', ' + this.db.escape(image) + ', ' + category_id + ', ' + 
+					this.db.escape(description) + ', ' + price + ');'
+	console.log(query)
+   var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, result) {
+        connection.release();
+        console.log(query);
+        if (err) {
+		res.send({ status: 'error', message: err });
+          deferred.reject(err);
+        } else {
+		res.send({ status: 'success', insertId: result.insertId, menuItem: {name: name, image: image, category_id: category_id, description: description, price:price } });
+          deferred.resolve(result);
+        }
+      });
+    }
+  })
+  return deferred.promise;
+}
+
+Adapter.prototype.editMenuItem = function(id, name, image, description, price, res) {
+  const query = 'UPDATE menu_items SET name = '+this.db.escape(name)+', image = ' + this.db.escape(image) + ', description =' + this.db.escape(description) + 
+						', price = '+ price +' WHERE id = ' + id;
+	console.log(query)
+   var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, result) {
+        connection.release();
+        console.log(query);
+        if (err) {
+		res.send({ status: 'error', message: err });
+          deferred.reject(err);
+        } else {
+		res.send({ status: 'success', message: 'Menu_items Updated', menu_items: {id: id, name: name, image: image, description: description, price: price } });
+          deferred.resolve(result);
+        }
+      });
+    }
+  })
+  return deferred.promise;
+}
+
+Adapter.prototype.fetchMenuItemDetails = function(menuItemId, res) {
+  const query = 'SELECT * FROM menu_items where id = '+menuItemId ;
+  var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, result) {
+        console.log("\n"+query+"\n")
+        connection.release();
+        if (err) {
+		res.send({ status: 'error', message: err });
+          deferred.reject(err);
+        } else {
+		res.send(result);
+          deferred.resolve(result);
+        }
+      });
+    }
+  });
+  return deferred.promise;
+}
+
+Adapter.prototype.removeMenuItem = function(menuItemId, res){
+  const query = 'DELETE FROM menu_items WHERE id = ' + menuItemId;
+   var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, result) {
+        console.log("\n"+query+"\n")
+        console.log("========================results===================="  + JSON.stringify(result) + '\n')
+        connection.release();
+        if (err) {
+			res.send({ status: 'error', message: err });
+            deferred.reject(err);
+        } else {
+			res.send({ status: 'success', message: 'Menu Item deleted' });
+            deferred.resolve(result);
+        }
+      });
+    }
+  });
+  return deferred.promise;
+}
+
+
+
 module.exports = Adapter;
-// DELETE FROM cart WHERE order_id =121
-// DELETE FROM cart WHERE menu_item_id =1 AND order_id =167
+
+
 
 //------------------------------------------------------------------------------
 //update the status of user in bot_users table

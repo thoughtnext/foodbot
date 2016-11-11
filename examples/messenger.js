@@ -22,7 +22,8 @@
   const fb = require("./fb");
   var Adapter = require("./Adapter");
   var db = new Adapter();
-
+  var routes = require('./api.js');
+	
   let Wit = null;
   let log = null;
   try {
@@ -167,6 +168,9 @@
     //
     else if (payload.toString() == "old_order") {
       console.log("\n[messenger.js - 158] ==old order\n");
+      var fbUserID = sessions[sessionId].fbid;
+      showMyCart(fbUserID);
+
     }
 
     /**
@@ -227,10 +231,14 @@
           var fbUserID = sessions[sessionId].fbid;
           getCategoriesForRestaurants(fbUserID, RestaurantId);
         })
+    } else if (payload.indexOf('Checkout') != -1) {
+      // checkOut();
+      console.log("payload == Checkout")
+      var fbUserID = sessions[sessionId].fbid;
+
+      console.log(fbUserID)
+      getCheckoutDetails(fbUserID)
     }
-    //  else if (payload.indexOf('Checkout') != -1) {
-    //   // checkOut();
-    // }
     // else if()
     else if (payload.indexOf('My_Cart') != -1) {
       console.log('payload==my cart selected')
@@ -275,7 +283,72 @@
 
 
   //=================================functions Implementation================================================================
+  function getCheckoutDetails(fbUserID) {
+    return GetCheckoutDetails(fbUserID)
+      .then(function(result) {
+		  console.log('hi user')
+         //console.log('111111111111111111111111111111111111111111111111')
+         var restaurant = result
+         console.log(restaurant.length)
+         var price_list = [];
+         for(var i=0; i<result.length; i++){
+           price_list[i] = {
+             "label": result[i].name,
+             "amount": result[i].amount
+           }
+           //console.log(price_list[i])
+         }
+         //console.log(price_list)
+         var message = {
+           "attachment": {
+             "type": "template",
+             "payload": {
+               "template_type": "generic",
+               "elements": [{
+                 // "title": 'Welcome to Vyanjan',
+                 "title": result[0].restaurant_name,
+                 "item_url": "https://freshmenu.com",
+                 "image_url": result[0].restaurant_image,
+                 "subtitle": result[0].restaurant_subtitle,
+                 "buttons": [{
+                   "type": "payment",
+                   "title": "Buy",
+                   "payload": "DEVELOPER_DEFINED_PAYLOAD",
+                   "payment_summary": {
+                     "currency": "USD",
+                     "payment_type": "FIXED_AMOUNT",
+                     "merchant_name": "Peter's Apparel",
+                     "requested_user_info": [
+                       "shipping_address",
+                       "contact_name",
+                       "contact_phone",
+                       "contact_email"
+                     ],
+                     "price_list": price_list
+                   }
+                 }]
+               }]
+             }
+           }
+         }
 
+ console.log(message.attachment.payload.elements[0].buttons[0].payment_summary.price_list[0])
+         fb.reply(message, fbUserID)
+           .then(() => null)
+           .catch((err) => {
+             console.error(
+               'Oops! An error occurred while forwarding the response to fbUserID',
+               fbUserID,
+               ':',
+               err.stack || err
+             );
+           })
+
+      })
+      // console.log(fbUserID)
+
+
+  }
 
 
   function checkControlOfChat(sessionId, text) {
@@ -324,7 +397,7 @@
                 console.log('\n\nResults ======= > ' + result);
                 if (result.length != 0) {
                   var elements = []
-                  for (var i = 0; i < 2; i++) {
+                  for (var i = 0; i < result.length; i++) {
                     elements[i] = { title: result[i].name, image_url: result[i].image, subtitle: result[i].description, buttons: [{ type: 'postback', payload: 'Restaurant_Selected-' + result[i].id, title: 'Select Restaurant' }] }
                   }
 
@@ -340,7 +413,10 @@
                         err.stack || err
                       );
                     });
-                } else {
+                } else if(result.length > 10){
+					console.log('Restaurants can not be more than 10')
+				}
+				else{
                   console.log('No Restaurants listed')
                 }
               })
@@ -377,7 +453,7 @@
     return FetchCategoriesForRestaurant(fbUserID, RestaurantId).then(function(result) {
       console.log('\nResults ' + JSON.stringify(result[0]));
       var quickReplies = [];
-      for (var i = 0; i < 10; i++) {
+      for (var i = 0; i < result.length; i++) {
         var tempQR = fb.createQuickReplies(result[i].name, 'Category_Selected-' + result[i].id, result[i].image);
         quickReplies[i] = tempQR;
       }
@@ -446,11 +522,11 @@
     // var fb_ID = sessions[fbUserID].fbid;
     console.log(fbUserID)
     console.log(MenuItemId)
-    // get orderId from Menu Id that is passed from Menu Item selected
-    // for adding items to cart
-    // then 
-    // add the item to cart
-    // if error is generated, send a message to fb user 
+      // get orderId from Menu Id that is passed from Menu Item selected
+      // for adding items to cart
+      // then 
+      // add the item to cart
+      // if error is generated, send a message to fb user 
     return GetOrderIdFromFbUserId(fbUserID)
       .then(function(result) {
         if (result.length != 0) {
@@ -506,6 +582,32 @@
           console.log('Result is throwing error')
           var message = fb.textMessage('Your cart is empty');
           return fb.reply(message, fbUserID)
+            .then(function() {
+              return FetchRestaurantsList().then(function(result) {
+                console.log('\n\nResults ======= > ' + result);
+                if (result.length != 0) {
+                  var elements = []
+                  for (var i = 0; i < result.length; i++) {
+                    elements[i] = { title: result[i].name, image_url: result[i].image, subtitle: result[i].description, buttons: [{ type: 'postback', payload: 'Restaurant_Selected-' + result[i].id, title: 'Select Restaurant' }] }
+                  }
+
+                  var message = fb.carouselMessage(elements);
+
+                  return fb.reply(message, fbUserID)
+                    .then(() => null)
+                    .catch((err) => {
+                      console.error(
+                        'Oops! An error occurred while forwarding the response to fbUserID',
+                        fbUserID,
+                        ':',
+                        err.stack || err
+                      );
+                    });
+                } else {
+                  console.log('No Restaurants listed')
+                }
+              })
+            })
 
           console.log("There is no item in cart ")
         }
@@ -544,7 +646,7 @@
           console.log('\n\nResults ======= > ' + result);
           if (result.length != 0) {
             var elements = []
-            for (var i = 0; i < 2; i++) {
+            for (var i = 0; i < result.length ; i++) {
               elements[i] = { title: result[i].name, image_url: result[i].image, subtitle: result[i].description, buttons: [{ type: 'postback', payload: 'Restaurant_Selected-' + result[i].id, title: 'Select Restaurant' }] }
             }
 
@@ -567,6 +669,10 @@
       })
   }
 
+
+  // function getRestaurantsList() {
+
+  // }
   //=================================functions Implementation====================END======================
 
   //===============================Adapter method calls ==========================================
@@ -684,13 +790,13 @@
       .then(function(result) {
         return result;
       }, function(error) {
-        console.log('\nError fetching restaurant id from CategoryId ', error)
+        console.log('\nError fetching Cart ', error)
       })
   }
 
-  // function checkOut() {
+  function checkOut() {
 
-  // }
+  }
 
   function GetCategoryIdFromMenuItemID(MenuItemId) {
     return db.getCategoryIdFromMenuItemID(MenuItemId)
@@ -725,7 +831,16 @@
       .then(function(result) {
         return result;
       }, function(error) {
-        console.log('\nError fetching Category Id  from FB User ID ', error)
+        console.log('\nError Emptying the cart ', error)
+      })
+  }
+
+  function GetCheckoutDetails(fbUserID) {
+    return db.getCheckoutDetails(fbUserID)
+      .then(function(result) {
+        return result;
+      }, function(error) {
+        console.log('\nError fetching RestaurantId from FB User ID ', error)
       })
   }
   //===============================Adapter method calls ==================END ========================
@@ -740,6 +855,23 @@
 
   // Starting our webserver and putting it all together
   const app = express();
+
+ 
+ var allowCrossDomain = function(req, res, next) {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
+  if ('OPTIONS' === req.method) {
+    res.sendStatus(200);
+  } else {
+    next();
+  }
+};
+
+app.use(bodyParser.json());
+
+app.use(allowCrossDomain);
+  routes.configure(app);
   app.use(({ method, url }, rsp, next) => {
     rsp.on('finish', () => {
       console.log(`${rsp.statusCode} ${method} ${url}`);
@@ -747,7 +879,7 @@
     next();
   });
 
-  app.use(bodyParser.json({ verify: verifyRequestSignature }));
+  
 
   // Webhook setup
   app.get('/webhook', (req, res) => {
@@ -759,6 +891,12 @@
     }
   });
 
+
+//app.post('/new/restaurant', function(req, res){
+		//console.log(req.body)
+		////db.addRestaurant(req.body, res);
+	//});
+	
   // Message handler
   app.post('/webhook', (req, res) => {
     // Parse the Messenger payload
@@ -817,7 +955,7 @@
 
               checkControlOfChat(sessionId, text);
               console.log('run Actions - sessionId - ' + sessionId)
-              
+
               if (text.toString().toUpperCase() == 'HEY' || text.toString().toUpperCase() == 'HELLO' || text.toString().toUpperCase() == 'HI') {
                 // var fbUserID = sessions[sessionId].fbid
                 // console.log(fbUserID);

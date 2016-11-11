@@ -68,6 +68,16 @@ function createQuickReplies(title, payload, image) {
   }
 }
 
+// function createWebViewButton(title, url, webview_height_ratio){
+//     return {
+//     "type": "web_url",
+//     "title": title,
+//     "url" : url,
+//     "webview_height_ratio": webview_height_ratio
+//   }
+// }
+
+
 //--------------------------------------------------------------------------------
 function reply(message, senderId) {
   var deferred = Q.defer();
