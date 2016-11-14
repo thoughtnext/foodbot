@@ -23,7 +23,7 @@
   var Adapter = require("./Adapter");
   var db = new Adapter();
   var routes = require('./api.js');
-	
+
   let Wit = null;
   let log = null;
   try {
@@ -286,63 +286,63 @@
   function getCheckoutDetails(fbUserID) {
     return GetCheckoutDetails(fbUserID)
       .then(function(result) {
-		  console.log('hi user')
-         //console.log('111111111111111111111111111111111111111111111111')
-         var restaurant = result
-         console.log(restaurant.length)
-         var price_list = [];
-         for(var i=0; i<result.length; i++){
-           price_list[i] = {
-             "label": result[i].name,
-             "amount": result[i].amount
-           }
-           //console.log(price_list[i])
-         }
-         //console.log(price_list)
-         var message = {
-           "attachment": {
-             "type": "template",
-             "payload": {
-               "template_type": "generic",
-               "elements": [{
-                 // "title": 'Welcome to Vyanjan',
-                 "title": result[0].restaurant_name,
-                 "item_url": "https://freshmenu.com",
-                 "image_url": result[0].restaurant_image,
-                 "subtitle": result[0].restaurant_subtitle,
-                 "buttons": [{
-                   "type": "payment",
-                   "title": "Buy",
-                   "payload": "DEVELOPER_DEFINED_PAYLOAD",
-                   "payment_summary": {
-                     "currency": "USD",
-                     "payment_type": "FIXED_AMOUNT",
-                     "merchant_name": "Peter's Apparel",
-                     "requested_user_info": [
-                       "shipping_address",
-                       "contact_name",
-                       "contact_phone",
-                       "contact_email"
-                     ],
-                     "price_list": price_list
-                   }
-                 }]
-               }]
-             }
-           }
-         }
+        console.log('hi user')
+          //console.log('111111111111111111111111111111111111111111111111')
+        var restaurant = result
+        console.log(restaurant)
+        var price_list = [];
+        for (var i = 0; i < result.length; i++) {
+          price_list[i] = {
+              "label": result[i].name,
+              "amount": result[i].amount
+            }
+            //console.log(price_list[i])
+        }
+        console.log(price_list)
+        var message = {
+          "attachment": {
+            "type": "template",
+            "payload": {
+              "template_type": "generic",
+              "elements": [{
+                "title": result[0].restaurant_name,
+                "item_url": "https://foodiebot.herokuapp.com/",
+                "image_url": result[0].restaurant_image,
+                "subtitle": result[0].restaurant_subtitle,
+                "buttons": [{
+                  "type": "payment",
+                  "title": "buy",
+                  "payload": "DEVELOPER_DEFINED_PAYLOAD",
+                  "payment_summary": {
+                    "currency": "USD",
+                    "payment_type": "FIXED_AMOUNT",
+                    "is_test_payment": true,
+                    "merchant_name": "Peter's Apparel",
+                    "requested_user_info": [
+                      "shipping_address",
+                      "contact_name",
+                      "contact_phone",
+                      "contact_email"
+                    ],
+                    "price_list": price_list
+                  }
+                }]
+              }]
+            }
+          }
+        }
 
- console.log(message.attachment.payload.elements[0].buttons[0].payment_summary.price_list[0])
-         fb.reply(message, fbUserID)
-           .then(() => null)
-           .catch((err) => {
-             console.error(
-               'Oops! An error occurred while forwarding the response to fbUserID',
-               fbUserID,
-               ':',
-               err.stack || err
-             );
-           })
+        console.log(message)
+        fb.reply(message, fbUserID)
+          .then(() => null)
+          .catch((err) => {
+            console.error(
+              'Oops! An error occurred while forwarding the response to fbUserID',
+              fbUserID,
+              ':',
+              err.stack || err
+            );
+          })
 
       })
       // console.log(fbUserID)
@@ -413,10 +413,9 @@
                         err.stack || err
                       );
                     });
-                } else if(result.length > 10){
-					console.log('Restaurants can not be more than 10')
-				}
-				else{
+                } else if (result.length > 10) {
+                  console.log('Restaurants can not be more than 10')
+                } else {
                   console.log('No Restaurants listed')
                 }
               })
@@ -646,7 +645,7 @@
           console.log('\n\nResults ======= > ' + result);
           if (result.length != 0) {
             var elements = []
-            for (var i = 0; i < result.length ; i++) {
+            for (var i = 0; i < result.length; i++) {
               elements[i] = { title: result[i].name, image_url: result[i].image, subtitle: result[i].description, buttons: [{ type: 'postback', payload: 'Restaurant_Selected-' + result[i].id, title: 'Select Restaurant' }] }
             }
 
@@ -856,21 +855,21 @@
   // Starting our webserver and putting it all together
   const app = express();
 
- 
- var allowCrossDomain = function(req, res, next) {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
-  if ('OPTIONS' === req.method) {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
-};
 
-app.use(bodyParser.json());
+  var allowCrossDomain = function(req, res, next) {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Content-Length, X-Requested-With');
+    if ('OPTIONS' === req.method) {
+      res.sendStatus(200);
+    } else {
+      next();
+    }
+  };
 
-app.use(allowCrossDomain);
+  app.use(bodyParser.json());
+
+  app.use(allowCrossDomain);
   routes.configure(app);
   app.use(({ method, url }, rsp, next) => {
     rsp.on('finish', () => {
@@ -879,7 +878,7 @@ app.use(allowCrossDomain);
     next();
   });
 
-  
+
 
   // Webhook setup
   app.get('/webhook', (req, res) => {
@@ -892,11 +891,11 @@ app.use(allowCrossDomain);
   });
 
 
-//app.post('/new/restaurant', function(req, res){
-		//console.log(req.body)
-		////db.addRestaurant(req.body, res);
-	//});
-	
+  //app.post('/new/restaurant', function(req, res){
+  //console.log(req.body)
+  ////db.addRestaurant(req.body, res);
+  //});
+
   // Message handler
   app.post('/webhook', (req, res) => {
     // Parse the Messenger payload
