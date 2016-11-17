@@ -23,7 +23,11 @@
   var Adapter = require("./Adapter");
   var db = new Adapter();
   var routes = require('./api.js');
+  var implement = require('./implementation')
+  var AdapterMethods = require('./AdapterMethods.js');
+  var constants = require("./payload");
 
+  // var postback = require('./postback')
   let Wit = null;
   let log = null;
   try {
@@ -130,11 +134,11 @@
       if (fbUserID) {
         var image1 = "http://s3.amazonaws.com/saveoneverything_assets/assets/images/icons/food_dining_icon.png";
         var image2 = "http://www.tastelikehome.co.za/wp-content/uploads/2015/10/cpg-foods-icon.png";
-        var qr1 = fb.createQuickReplies("Create new order", "new_order", image1);
-        var qr2 = fb.createQuickReplies("Edit existing order", "old_order", image2);
+        var qr1 = fb.createQuickReplies("Individual", "individual", image1);
+        var qr2 = fb.createQuickReplies("Groups", "group", image2);
         var qr = [qr1, qr2];
 
-        var message = fb.quickReplyMessage("Select an option", qr);
+        var message = fb.quickReplyMessage("Please select an option. You want to order for ", qr);
         return fb.reply(message, fbUserID)
           .then(() => null)
           .catch((err) => {
@@ -150,7 +154,7 @@
         // Giving the wheel back to our bot
         return Promise.resolve()
       }
-    },
+    }
 
 
     // You should implement your custom actions here
@@ -160,7 +164,39 @@
   //==================== Postback Section ============================================================================
   function HandlePostback(payload, sessionId) {
     console.log('\n\n payload from HandlePostback ' + payload)
-    if (payload.toString() == "new_order") {
+
+    if (payload.toString() == "individual") {
+      console.log('payload==individual')
+      var fbUserID = sessions[sessionId].fbid;
+
+      IndividualOrder(fbUserID)
+    }
+    //
+    else if (payload.toString() == "group") {
+      console.log('payload==group')
+      var fbUserID = sessions[sessionId].fbid;
+      implement.fetchGroupsList(fbUserID)
+    }
+    //
+    else if (payload.toString().indexOf(constants.CREATENEWGROUPORDER) != -1) {
+      var fbUserID = sessionId
+      console.log(fbUserID)
+      var index = payload.indexOf("-");
+      var GroupId = payload.slice(index + 1, payload.length);
+      console.log('GroupId ' + GroupId)
+      implement.createNewGroupOrder(GroupId, fbUserID)
+    }
+    //
+    else if (payload.toString().indexOf(constants.CREATENEWGROUPORDER) != -1) {
+      var fbUserID = sessionId
+      console.log(fbUserID)
+      var index = payload.indexOf("-");
+      var GroupId = payload.slice(index + 1, payload.length);
+      console.log('GroupId ' + GroupId)
+      implement.createNewGroupOrder(GroupId, fbUserID)
+    }
+    //
+    else if (payload.toString() == "new_order") {
       console.log("\n[messenger.js - 155] == new order\n");
       CreateNewOrder(sessionId);
     }
@@ -170,7 +206,6 @@
       console.log("\n[messenger.js - 158] ==old order\n");
       var fbUserID = sessions[sessionId].fbid;
       showMyCart(fbUserID);
-
     }
 
     /**
@@ -231,13 +266,15 @@
           var fbUserID = sessions[sessionId].fbid;
           getCategoriesForRestaurants(fbUserID, RestaurantId);
         })
-    } else if (payload.indexOf('Checkout') != -1) {
+    }
+    //
+    else if (payload.indexOf('Checkout') != -1) {
       // checkOut();
       console.log("payload == Checkout")
       var fbUserID = sessions[sessionId].fbid;
-
+      share(fbUserID)
       console.log(fbUserID)
-      getCheckoutDetails(fbUserID)
+        //getCheckoutDetails(fbUserID)
     }
     // else if()
     else if (payload.indexOf('My_Cart') != -1) {
@@ -263,7 +300,9 @@
       console.log('Continue_cart')
       var fbUserID = sessions[sessionId].fbid;
       showMyCart(fbUserID)
-    } else if (payload.indexOf('Empty_cart') != -1) {
+    }
+    //
+    else if (payload.indexOf('Empty_cart') != -1) {
       console.log('Empty_cart')
       var fbUserID = sessions[sessionId].fbid;
       GetOrderIdFromFbUserId(fbUserID)
@@ -273,7 +312,9 @@
           emptyCart(fbUserID, OrderId);
         })
         // showMyCart(fbUserID)
-    } else {
+    }
+    //
+    else {
       console.log('Could not find payload');
     }
   }
@@ -283,20 +324,76 @@
 
 
   //=================================functions Implementation================================================================
+
+  function IndividualOrder(fbUserID) {
+    // var fbUserID = sessions[sessionId].fbid;
+
+    if (fbUserID) {
+      var image1 = "http://s3.amazonaws.com/saveoneverything_assets/assets/images/icons/food_dining_icon.png";
+      var image2 = "http://www.tastelikehome.co.za/wp-content/uploads/2015/10/cpg-foods-icon.png";
+      var qr1 = fb.createQuickReplies("Create new order", "new_order", image1);
+      var qr2 = fb.createQuickReplies("Edit existing order", "old_order", image2);
+      var qr = [qr1, qr2];
+
+      var message = fb.quickReplyMessage("Select an option", qr);
+      return fb.reply(message, fbUserID)
+        .then(() => null)
+        .catch((err) => {
+          console.error(
+            'Oops! An error occurred while forwarding the response to fbUserID : ',
+            fbUserID,
+            ':',
+            err.stack || err
+          );
+        });
+    } else {
+      console.error('Oops! Couldn\'t find user for session:', sessionId);
+      // Giving the wheel back to our bot
+      //return Promise.resolve()
+    }
+  }
+
+  function share(fbUserID) {
+    var message = {
+      "attachment": {
+        "type": "template",
+        "payload": {
+          "template_type": "generic",
+          "elements": [{
+            "title": "Breaking News: Record Thunderstorms",
+            "subtitle": "The local area is due for record thunderstorms over the weekend.",
+            "image_url": "https://thechangreport.com/img/lightning.png",
+            "buttons": [{
+              "type": "element_share"
+            }]
+          }]
+        }
+      }
+    }
+    console.log(message.attachment.payload.elements[0].buttons)
+    fb.reply(message, fbUserID)
+      .then(() => null)
+      .catch((err) => {
+        console.error(
+          'Oops! An error occurred while forwarding the response to fbUserID',
+          fbUserID,
+          ':',
+          err.stack || err
+        );
+      })
+  }
+
   function getCheckoutDetails(fbUserID) {
     return GetCheckoutDetails(fbUserID)
       .then(function(result) {
-        console.log('hi user')
-          //console.log('111111111111111111111111111111111111111111111111')
         var restaurant = result
         console.log(restaurant)
         var price_list = [];
         for (var i = 0; i < result.length; i++) {
           price_list[i] = {
-              "label": result[i].name,
-              "amount": result[i].amount
-            }
-            //console.log(price_list[i])
+            "label": result[i].name,
+            "amount": result[i].amount
+          }
         }
         console.log(price_list)
         var message = {
@@ -346,10 +443,7 @@
 
       })
       // console.log(fbUserID)
-
-
   }
-
 
   function checkControlOfChat(sessionId, text) {
 
@@ -669,9 +763,6 @@
   }
 
 
-  // function getRestaurantsList() {
-
-  // }
   //=================================functions Implementation====================END======================
 
   //===============================Adapter method calls ==========================================
@@ -791,10 +882,6 @@
       }, function(error) {
         console.log('\nError fetching Cart ', error)
       })
-  }
-
-  function checkOut() {
-
   }
 
   function GetCategoryIdFromMenuItemID(MenuItemId) {
