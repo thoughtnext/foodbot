@@ -860,6 +860,8 @@ Adapter.prototype.insertNewGroupOrder = function(group_id) {
           if (err) {
             deferred.reject(err);
           } else {
+            console.log('result.insertId')
+            console.log(result.insertId)
             deferred.resolve(result);
           }
         });
@@ -889,6 +891,32 @@ Adapter.prototype.getGroupId = function(group_id) {
   });
   return deferred.promise;
 }
+
+
+Adapter.prototype.addItemsToGroupCart = function(MenuItemId, GroupOrderId) {
+  var Quantity = 1;
+  const query = 'INSERT INTO group_cart (id, menu_item_id, quantity, group_order_id) VALUES (NULL,' + this.db.escape(MenuItemId) + ', ' + this.db.escape(Quantity) + ', ' + this.db.escape(GroupOrderId) + ');';
+  var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, rows, fields) {
+        // console.log('Reading query')
+        console.log("\n" + query + "\n")
+        console.log("========================results====================" + JSON.stringify(rows[0]) + /*rows[0] +*/ '\n')
+        connection.release();
+        if (err) {
+          deferred.reject(err);
+        } else {
+          deferred.resolve(rows);
+        }
+      });
+    }
+  });
+  return deferred.promise;
+}
+
 
 module.exports = Adapter;
 

@@ -178,7 +178,7 @@
       implement.fetchGroupsList(fbUserID)
     }
     //
-    else if (payload.toString().indexOf(constants.CREATENEWGROUPORDER) != -1) {
+    else if (payload.toString().indexOf(constants.G_CREATE_NEW_GROUP_ORDER) != -1) {
       var fbUserID = sessionId
       console.log(fbUserID)
       var index = payload.indexOf("-");
@@ -187,18 +187,41 @@
       implement.createNewGroupOrder(GroupId, fbUserID)
     }
     //
-    else if (payload.toString().indexOf(constants.CREATENEWGROUPORDER) != -1) {
+    else if (payload.toString().indexOf(constants.G_RESTAURANT_SELECTED) != -1) {
       var fbUserID = sessionId
       console.log(fbUserID)
-      var index = payload.indexOf("-");
-      var GroupId = payload.slice(index + 1, payload.length);
-      console.log('GroupId ' + GroupId)
-      implement.createNewGroupOrder(GroupId, fbUserID)
+      var str = payload.split("-");
+      var RestaurantId = str[1];
+      var GroupOrderId = str[2]
+      console.log('RestaurantId ' + RestaurantId)
+      console.log('GroupOrderId ' + GroupOrderId)
+      implement.fetchCategoriesforRestaurant(fbUserID, RestaurantId, GroupOrderId)
+    }
+    //
+    else if (payload.toString().indexOf(constants.G_CATEGORY_SELECTED) != -1) {
+      var fbUserID = sessions[sessionId].fbid;
+      console.log(fbUserID)
+      var str = payload.split("-");
+      var CategoryId = str[1]
+      var GroupOrderId = str[2]
+      console.log('CategoryId ' + CategoryId)
+      console.log('GroupOrderId ' + GroupOrderId)
+      implement.getMenuItemsForCategory(fbUserID, CategoryId, GroupOrderId)
+    }
+    //
+    else if (payload.toString().indexOf(constants.G_ADD_TO_CART) != -1) {
+      var fbUserID = sessionId;
+      console.log(fbUserID)
+      var str = payload.split("-");
+      var MenuItemId = str[1]
+      var GroupOrderId = str[2]
+      implement.addItemsToGroupCart(fbUserID, MenuItemId, GroupOrderId)
     }
     //
     else if (payload.toString() == "new_order") {
       console.log("\n[messenger.js - 155] == new order\n");
       CreateNewOrder(sessionId);
+
     }
 
     //
@@ -239,7 +262,7 @@
     // if Menu Item selected, 
     // Add item to cart 
     // After the item is added to the cart
-    // call moreOptionsQuickReplies - More OPtions
+    // call moreOptionsQuickReplies - More Options
     else if (payload.indexOf('Menu_Item_Selected') != -1) {
       console.log('payload==menu selected')
       var index = payload.indexOf("-")
@@ -272,9 +295,9 @@
       // checkOut();
       console.log("payload == Checkout")
       var fbUserID = sessions[sessionId].fbid;
-      share(fbUserID)
+      // share(fbUserID)
       console.log(fbUserID)
-        //getCheckoutDetails(fbUserID)
+        getCheckoutDetails(fbUserID)
     }
     // else if()
     else if (payload.indexOf('My_Cart') != -1) {
@@ -353,35 +376,6 @@
     }
   }
 
-  function share(fbUserID) {
-    var message = {
-      "attachment": {
-        "type": "template",
-        "payload": {
-          "template_type": "generic",
-          "elements": [{
-            "title": "Breaking News: Record Thunderstorms",
-            "subtitle": "The local area is due for record thunderstorms over the weekend.",
-            "image_url": "https://thechangreport.com/img/lightning.png",
-            "buttons": [{
-              "type": "element_share"
-            }]
-          }]
-        }
-      }
-    }
-    console.log(message.attachment.payload.elements[0].buttons)
-    fb.reply(message, fbUserID)
-      .then(() => null)
-      .catch((err) => {
-        console.error(
-          'Oops! An error occurred while forwarding the response to fbUserID',
-          fbUserID,
-          ':',
-          err.stack || err
-        );
-      })
-  }
 
   function getCheckoutDetails(fbUserID) {
     return GetCheckoutDetails(fbUserID)
@@ -414,7 +408,7 @@
                     "currency": "USD",
                     "payment_type": "FIXED_AMOUNT",
                     "is_test_payment": true,
-                    "merchant_name": "Peter's Apparel",
+                    "merchant_name": "Food Bot",
                     "requested_user_info": [
                       "shipping_address",
                       "contact_name",
@@ -978,10 +972,6 @@
   });
 
 
-  //app.post('/new/restaurant', function(req, res){
-  //console.log(req.body)
-  ////db.addRestaurant(req.body, res);
-  //});
 
   // Message handler
   app.post('/webhook', (req, res) => {
@@ -1117,24 +1107,24 @@
 
 
   //============== printing line number
-  Object.defineProperty(global, '__stack', {
-    get: function() {
-      var orig = Error.prepareStackTrace;
-      Error.prepareStackTrace = function(_, stack) {
-        return stack;
-      };
-      var err = new Error;
-      Error.captureStackTrace(err, arguments.callee);
-      var stack = err.stack;
-      Error.prepareStackTrace = orig;
-      return stack;
-    }
-  });
+  // Object.defineProperty(global, '__stack', {
+  //   get: function() {
+  //     var orig = Error.prepareStackTrace;
+  //     Error.prepareStackTrace = function(_, stack) {
+  //       return stack;
+  //     };
+  //     var err = new Error;
+  //     Error.captureStackTrace(err, arguments.callee);
+  //     var stack = err.stack;
+  //     Error.prepareStackTrace = orig;
+  //     return stack;
+  //   }
+  // });
 
-  Object.defineProperty(global, '__line', {
-    get: function() {
-      return __stack[1].getLineNumber();
-    }
-  });
+  // Object.defineProperty(global, '__line', {
+  //   get: function() {
+  //     return __stack[1].getLineNumber();
+  //   }
+  // });
 
 })();
