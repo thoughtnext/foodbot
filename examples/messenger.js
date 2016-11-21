@@ -71,7 +71,10 @@
 
   function runActions(sessionId) {
     console.log('runActions - sessionId ' + sessionId)
-    actions.welcome({ sessionId });
+      // actions.welcome({ sessionId });
+
+    var text = 'Hey there. Welcome to Our Food Bot. We are currently serving in Boston area only.'
+    return Promise.all([actions.send({ sessionId }, { text }), actions.welcome({ sessionId })]);
   }
 
 
@@ -106,6 +109,7 @@
       // Our bot has something to say!
       // Let's retrieve the Facebook user whose session belongs to
       const fbUserID = sessions[sessionId].fbid;
+
       if (fbUserID) {
         // Yay, we found our fb user!
         // Let's forward our bot response to her.
@@ -134,11 +138,11 @@
       if (fbUserID) {
         var image1 = "http://s3.amazonaws.com/saveoneverything_assets/assets/images/icons/food_dining_icon.png";
         var image2 = "http://www.tastelikehome.co.za/wp-content/uploads/2015/10/cpg-foods-icon.png";
-        var qr1 = fb.createQuickReplies("Individual", "individual", image1);
+        var qr1 = fb.createQuickReplies("Only You", "individual", image1);
         var qr2 = fb.createQuickReplies("Groups", "group", image2);
         var qr = [qr1, qr2];
 
-        var message = fb.quickReplyMessage("Please select an option. You want to order for ", qr);
+        var message = fb.quickReplyMessage("You want to order for ", qr);
         return fb.reply(message, fbUserID)
           .then(() => null)
           .catch((err) => {
@@ -175,7 +179,7 @@
     else if (payload.toString() == "group") {
       console.log('payload==group')
       var fbUserID = sessions[sessionId].fbid;
-      implement.fetchGroupsList(fbUserID)
+      //  implement.fetchGroupsList(fbUserID)
     }
     //
     else if (payload.toString().indexOf(constants.G_CREATE_NEW_GROUP_ORDER) != -1) {
@@ -297,7 +301,7 @@
       var fbUserID = sessions[sessionId].fbid;
       // share(fbUserID)
       console.log(fbUserID)
-        getCheckoutDetails(fbUserID)
+      getCheckoutDetails(fbUserID)
     }
     // else if()
     else if (payload.indexOf('My_Cart') != -1) {
@@ -355,10 +359,10 @@
       var image1 = "http://s3.amazonaws.com/saveoneverything_assets/assets/images/icons/food_dining_icon.png";
       var image2 = "http://www.tastelikehome.co.za/wp-content/uploads/2015/10/cpg-foods-icon.png";
       var qr1 = fb.createQuickReplies("Create new order", "new_order", image1);
-      var qr2 = fb.createQuickReplies("Edit existing order", "old_order", image2);
+      var qr2 = fb.createQuickReplies("Edit ongoing order", "old_order", image2);
       var qr = [qr1, qr2];
 
-      var message = fb.quickReplyMessage("Select an option", qr);
+      var message = fb.quickReplyMessage("So, how do you want to proceed ?", qr);
       return fb.reply(message, fbUserID)
         .then(() => null)
         .catch((err) => {
@@ -488,7 +492,7 @@
                   for (var i = 0; i < result.length; i++) {
                     elements[i] = { title: result[i].name, image_url: result[i].image, subtitle: result[i].description, buttons: [{ type: 'postback', payload: 'Restaurant_Selected-' + result[i].id, title: 'Select Restaurant' }] }
                   }
-
+                  console.log(elements)
                   var message = fb.carouselMessage(elements);
 
                   return fb.reply(message, fbUserID)
@@ -521,7 +525,7 @@
 
         var qr = [continueCart, emptyCart]
 
-        var message = fb.quickReplyMessage('Select an option', qr)
+        var message = fb.quickReplyMessage('You already have an ongoing order. Please select an option', qr)
         return fb.reply(message, fbUserID)
           .then(() => null)
           .catch((err) => {
@@ -592,7 +596,7 @@
     var myCart = fb.createQuickReplies('My Cart', 'My_Cart', 'http://www.babun.io/wp-content/uploads/2016/03/BabunMetaPic-1.png');
 
     var quickReplies = [addMoreItems, checkout, myCart];
-    var message = fb.quickReplyMessage('More Options', quickReplies);
+    var message = fb.quickReplyMessage('Other Options', quickReplies);
     return fb.reply(message, fbUserID)
       .then(() => null)
       .catch((err) => {
@@ -642,6 +646,7 @@
         var OrderId = result[0].id
         return GetMyCart(OrderId)
       })
+
       .then(function(result) {
         if (result.length != 0) {
           var elements = [];
@@ -734,7 +739,7 @@
           if (result.length != 0) {
             var elements = []
             for (var i = 0; i < result.length; i++) {
-              elements[i] = { title: result[i].name, image_url: result[i].image, subtitle: result[i].description, buttons: [{ type: 'postback', payload: 'Restaurant_Selected-' + result[i].id, title: 'Select Restaurant' }] }
+              elements[i] = { title: result[i].name, image_url:  result[i].image, subtitle: result[i].description, buttons: [{ type: 'postback', payload: 'Restaurant_Selected-' + result[i].id, title: 'Select Restaurant' }] }
             }
 
             var message = fb.carouselMessage(elements);
