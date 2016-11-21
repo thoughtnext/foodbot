@@ -26,6 +26,8 @@
   var implement = require('./implementation')
   var AdapterMethods = require('./AdapterMethods.js');
   var constants = require("./payload");
+  var Q = require("q");
+
 
   // var postback = require('./postback')
   let Wit = null;
@@ -109,13 +111,16 @@
       // Our bot has something to say!
       // Let's retrieve the Facebook user whose session belongs to
       const fbUserID = sessions[sessionId].fbid;
+      var defer = Q.defer()
 
       if (fbUserID) {
         // Yay, we found our fb user!
         // Let's forward our bot response to her.
         // We return a promise to let our bot know when we're done sending
         return fb.reply(fb.textMessage(text), fbUserID)
-          .then(() => null)
+          .then(function() {
+            return defer.resolve();
+          })
           .catch((err) => {
             console.error(
               'Oops! An error occurred while forwarding the response to fbUserID: ',
@@ -123,18 +128,22 @@
               ':',
               err.stack || err
             );
+            return defer.reject(err);
+
           });
       } else {
         console.error('Oops! Couldn\'t find user for session:', sessionId);
         // Giving the wheel back to our bot
-        return Promise.resolve();
       }
+      return defer.promise;
+
     },
     welcome({ sessionId }) {
       const fbUserID = sessions[sessionId].fbid;
       console.log("125 - sessionId - " + sessionId)
       console.log('126 - fbUserID - ' + fbUserID)
         // var fbUserID = sessionId
+      var defer = Q.defer()
       if (fbUserID) {
         var image1 = "http://s3.amazonaws.com/saveoneverything_assets/assets/images/icons/food_dining_icon.png";
         var image2 = "http://www.tastelikehome.co.za/wp-content/uploads/2015/10/cpg-foods-icon.png";
@@ -144,7 +153,9 @@
 
         var message = fb.quickReplyMessage("You want to order for ", qr);
         return fb.reply(message, fbUserID)
-          .then(() => null)
+          .then(function() {
+            return defer.resolve();
+          })
           .catch((err) => {
             console.error(
               'Oops! An error occurred while forwarding the response to fbUserID : ',
@@ -152,12 +163,14 @@
               ':',
               err.stack || err
             );
+            return defer.reject(err);
           });
       } else {
         console.error('Oops! Couldn\'t find user for session:', sessionId);
         // Giving the wheel back to our bot
-        return Promise.resolve()
+
       }
+      return defer.promise;
     }
 
 
@@ -647,7 +660,7 @@
         return GetMyCart(OrderId)
       })
 
-      .then(function(result) {
+    .then(function(result) {
         if (result.length != 0) {
           var elements = [];
           for (var i = 0; i < result.length; i++) {
@@ -739,7 +752,7 @@
           if (result.length != 0) {
             var elements = []
             for (var i = 0; i < result.length; i++) {
-              elements[i] = { title: result[i].name, image_url:  result[i].image, subtitle: result[i].description, buttons: [{ type: 'postback', payload: 'Restaurant_Selected-' + result[i].id, title: 'Select Restaurant' }] }
+              elements[i] = { title: result[i].name, image_url: result[i].image, subtitle: result[i].description, buttons: [{ type: 'postback', payload: 'Restaurant_Selected-' + result[i].id, title: 'Select Restaurant' }] }
             }
 
             var message = fb.carouselMessage(elements);
