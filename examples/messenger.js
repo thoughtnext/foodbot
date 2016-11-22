@@ -71,13 +71,16 @@
   // See the Send API reference
   // https://developers.facebook.com/docs/messenger-platform/send-api-reference
 
-  function runActions(sessionId) {
-    console.log('runActions - sessionId ' + sessionId)
-      // actions.welcome({ sessionId });
+  // function runActions(sessionId) {
+  //   console.log('runActions - sessionId ' + sessionId)
+  //     // actions.welcome({ sessionId });
+  //   var text = 'Hey there. Welcome to Our Food Bot. We are currently serving in Boston area only.'
 
-    var text = 'Hey there. Welcome to Our Food Bot. We are currently serving in Boston area only.'
-    return Promise.all([actions.send({ sessionId }, { text }), actions.welcome({ sessionId })]);
-  }
+  //   var p1 = actions.send({ sessionId }, { text })
+  //   var p2 = actions.welcome({ sessionId })
+    
+  //   return Promise.all([p1, p2]);
+  // }
 
 
   // ----------------------------------------------------------------------------
@@ -135,6 +138,7 @@
         console.error('Oops! Couldn\'t find user for session:', sessionId);
         // Giving the wheel back to our bot
       }
+      console.log('defer')
       return defer.promise;
 
     },
@@ -1050,35 +1054,36 @@
               checkControlOfChat(sessionId, text);
               console.log('run Actions - sessionId - ' + sessionId)
 
-              if (text.toString().toUpperCase() == 'HEY' || text.toString().toUpperCase() == 'HELLO' || text.toString().toUpperCase() == 'HI') {
-                // var fbUserID = sessions[sessionId].fbid
-                // console.log(fbUserID);
-                runActions(sessionId);
-              } else {
-                console.log('Sorry, I could not understand what you want ! Please input again')
-              }
-              // wit.runActions(
-              //     sessionId, // the user's current session
-              //     text, // the user's message
-              //     sessions[sessionId].context // the user's current session state
-              //   ).then((context) => {
-              //     // Our bot did everything it has to do.
-              //     // Now it's waiting for further messages to proceed.
-              //     console.log('Waiting for next user messages');
+          //     if (text.toString().toUpperCase() == 'HEY' || text.toString().toUpperCase() == 'HELLO' || text.toString().toUpperCase() == 'HI') {
+          //   // var fbUserID = sessions[sessionId].fbid
+          //   // console.log(fbUserID);
+          //   runActions(sessionId);
+          // } else {
+          //   console.log('Sorry, I could not understand what you want ! Please input again')
+          // }
 
-              //     // Based on the session state, you might want to reset the session.
-              //     // This depends heavily on the business logic of your bot.
-              //     // Example:
-              //     // if (context['done']) {
-              //     //   delete sessions[sessionId];
-              //     // }
+              wit.runActions(
+                  sessionId, // the user's current session
+                  text, // the user's message
+                  sessions[sessionId].context // the user's current session state
+                ).then((context) => {
+                  // Our bot did everything it has to do.
+                  // Now it's waiting for further messages to proceed.
+                  console.log('Waiting for next user messages');
 
-              //     // Updating the user's current session state
-              //     sessions[sessionId].context = context;
-              //   })
-              //   .catch((err) => {
-              //     console.error('Oops! Got an error from Wit: ', err.stack || err);
-              //   })
+                  // Based on the session state, you might want to reset the session.
+                  // This depends heavily on the business logic of your bot.
+                  // Example:
+                  // if (context['done']) {
+                  //   delete sessions[sessionId];
+                  // }
+
+                  // Updating the user's current session state
+                  sessions[sessionId].context = context;
+                })
+                .catch((err) => {
+                  console.error('Oops! Got an error from Wit: ', err.stack || err);
+                })
             }
             // }
           } else {
