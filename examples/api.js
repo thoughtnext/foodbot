@@ -4,6 +4,7 @@ var AWS = require('aws-sdk');
 var path = require('path')
 var multer = require('multer')
 var multerS3 = require('multer-s3')
+var implement = require('./implementation')
 AWS.config.loadFromPath('./config.json');
 AWS.config.update({
   signatureVersion: 'v4'
@@ -45,6 +46,7 @@ module.exports = {
     });
     app.post('/new/restaurant/', function(req, res) {
       console.log(req.body)
+      // res.json(req.body);
       db.addRestaurant(req.body.name, req.body.image, req.body.description, res);
     });
     app.put('/edit/restaurants/:restaurantId/', function(req, res) {
@@ -56,13 +58,19 @@ module.exports = {
       db.editRestaurantIsEnabled(req.params.restaurantId, req.body.isEnabled, res);
     });
     app.get('/restaurants/:restaurantId/categories/', function(req, res) {
-      db.fetchCategoriesforRestaurant(req.params.restaurantId, res)
+      db.FetchCategoriesforRestaurant(req.params.restaurantId, res)
     })
     app.get('/categories/:categoryId/', function(req, res) {
       db.fetchCategoryDetails(req.params.categoryId, res)
     })
     app.get('/categories/:categoryId/menuItems/', function(req, res) {
       db.fetchMenuItemsForCategory(req.params.categoryId, res)
+    })
+    app.get('/groups/check/:groupName', function(req, res) {
+      db.checkIfGroupNameExists(req.params.groupName, res)
+    })
+    app.get('/groups/check/:groupName/:groupPassword', function(req, res) {
+      db.checkIfGroupExists(req.params.groupName, req.params.groupPassword, res)
     })
     app.delete('/categories/:categoryId/', function(req, res) {
       db.removeCategory(req.params.categoryId, res)
@@ -79,6 +87,60 @@ module.exports = {
       console.log(req.body)
       db.addMenuItem(req.body.name, req.body.image, req.params.categoryId, req.body.description, req.body.price, res);
     });
+    app.post('/new/group', function(req, res) {
+      console.log('req.body')
+      console.log(req.body)
+      var user_id = req.body.user_id
+      var fb_id = req.body.fb_id
+      var groupName = req.body.group_name
+      var password = req.body.password
+      // console.log(groupName)
+      db.createNewGroup(req.body, res)
+        .then(function(result) {
+          db.assignNewGroupToUser(result, user_id)
+            .then(function() {
+              implement.sendSuccessForAddNewGroup(fb_id, groupName, password)
+            })
+        })
+    });
+    app.post('/join/group', function(req, res) {
+      console.log(req.body)
+      var user_id = req.body.user_id
+      var fb_id = req.body.fb_id
+      var groupName = req.body.group_name
+      var groupPassword = req.body.password
+      var group_id = req.body.group_id
+      // db.createNewGroup(req.body)
+      //   .then(function(result) {
+        db.checkIfGroupIsAssignedToUser(group_id, user_id)
+        .then(function(result){
+          console.log(result)
+          if(result.exists){
+            res.send({status: true})
+            implement.sendFailureForJoinGroup(fb_id, groupName)
+          }
+          else {
+            db.assignNewGroupToUser(group_id, user_id)
+            .then(function() {
+              res.send({status: true})
+              implement.sendSuccessForJoinGroup(fb_id, groupName)
+            })
+          }
+        })
+          // db.assignNewGroupToUser(group_id, user_id)
+          //   .then(function() {
+          //     res.send({status: true})
+          //     implement.sendSuccessForJoinGroup(fb_id, groupName)
+          //   })
+
+        // })
+    });
+
+    app.post('/user/:userId/group/:groupId', function(req, res) {
+      console.log(req.body)
+        // db.createNewGroup(req.body)
+        // db.addMenuItem(req.body.name, req.body.image, req.params.categoryId, req.body.description, req.body.price, res);
+    });
     app.put('/edit/menuItems/:menuItemId/', function(req, res) {
       console.log(req.body)
       db.editMenuItem(req.params.menuItemId, req.body.name, req.body.image, req.body.description, req.body.price, res)
@@ -94,6 +156,7 @@ module.exports = {
       res.send({ status: 'success', file: req.file })
       console.log('Upload Successful ', req.file);
     });
+
     app.post('/upload/menuItem/', upload2.single('file'), function(req, res, next) {
       res.send({ status: 'success', file: req.file })
       console.log('Upload Successful ', req.file);

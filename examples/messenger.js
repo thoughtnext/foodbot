@@ -45,14 +45,14 @@
   const PORT = process.env.PORT || 8445;
 
   // Wit.ai parameters
-  const WIT_TOKEN = process.env.WIT_TOKEN || 'T2ABDZL6S5TGHW3C4NWVPYIUQE7QWBDD';
+  const WIT_TOKEN = process.env.WIT_TOKEN || '3TNX4RYRXE2AEHGEQWBIEHMR33QUL6VY';
 
   // Messenger API parameters
-  const FB_PAGE_TOKEN = process.env.FB_PAGE_TOKEN || 'EAANUKloOsDgBAFN4JJgRPDq6lX1SMku2X6aD46EUMhlXDqihnQLNYMxxB8ZC8yr1IXeOVmbkUNtEwd47JGPL32nPj9g4w3Iaeh4ZAKpIGnSezakNZAdCbI763KpP6GjudzdCgu4mgNfujZCV9DYg6mJdzgnjwQk3DyWu7RppTG6hyLGZB5iCU';
+  const FB_PAGE_TOKEN = process.env.FB_PAGE_TOKEN || 'EAAO6VdlcrtYBAJhEzDUfHA9zfcurVpsi9A8rK0jD70FNk8SBjEnmzPeZCoLRQuTYdAzXVhGufbeiewMPajXlTe49PZCCZA8fCZAfgqZBJQQkTqTB4iBJJf7Xy16yopaZCjjfCMNr1cFVGk3w8xZCfUGrZAldtUkOrsOsb8zeH1ZA3LgZDZD';
   if (!FB_PAGE_TOKEN) {
     throw new Error('missing FB_PAGE_TOKEN');
   }
-  const FB_APP_SECRET = process.env.FB_APP_SECRET || 'f233512da58d457b7333a121f33534b6';
+  const FB_APP_SECRET = process.env.FB_APP_SECRET || '9cb69a96ce1df89b306e8685332e65da';
   if (!FB_APP_SECRET) {
     throw new Error('missing FB_APP_SECRET');
   }
@@ -78,7 +78,7 @@
 
   //   var p1 = actions.send({ sessionId }, { text })
   //   var p2 = actions.welcome({ sessionId })
-    
+
   //   return Promise.all([p1, p2]);
   // }
 
@@ -115,72 +115,226 @@
       // Let's retrieve the Facebook user whose session belongs to
       const fbUserID = sessions[sessionId].fbid;
       var defer = Q.defer()
-
+      console.log(text)
       if (fbUserID) {
-        // Yay, we found our fb user!
-        // Let's forward our bot response to her.
-        // We return a promise to let our bot know when we're done sending
-        return fb.reply(fb.textMessage(text), fbUserID)
-          .then(function() {
-            return defer.resolve();
-          })
-          .catch((err) => {
-            console.error(
-              'Oops! An error occurred while forwarding the response to fbUserID: ',
-              fbUserID,
-              ':',
-              err.stack || err
-            );
-            return defer.reject(err);
-
-          });
-      } else {
-        console.error('Oops! Couldn\'t find user for session:', sessionId);
-        // Giving the wheel back to our bot
-      }
-      console.log('defer')
-      return defer.promise;
-
-    },
-    welcome({ sessionId }) {
-      const fbUserID = sessions[sessionId].fbid;
-      console.log("125 - sessionId - " + sessionId)
-      console.log('126 - fbUserID - ' + fbUserID)
-        // var fbUserID = sessionId
-      var defer = Q.defer()
-      if (fbUserID) {
-        var image1 = "http://s3.amazonaws.com/saveoneverything_assets/assets/images/icons/food_dining_icon.png";
-        var image2 = "http://www.tastelikehome.co.za/wp-content/uploads/2015/10/cpg-foods-icon.png";
-        var qr1 = fb.createQuickReplies("Only You", "individual", image1);
-        var qr2 = fb.createQuickReplies("Groups", "group", image2);
-        var qr = [qr1, qr2];
-
-        var message = fb.quickReplyMessage("You want to order for ", qr);
+        // console.log('hello foodbot')
+        var message = fb.textMessage(text)
         return fb.reply(message, fbUserID)
           .then(function() {
             return defer.resolve();
           })
-          .catch((err) => {
-            console.error(
-              'Oops! An error occurred while forwarding the response to fbUserID : ',
-              fbUserID,
-              ':',
-              err.stack || err
-            );
-            return defer.reject(err);
-          });
       } else {
         console.error('Oops! Couldn\'t find user for session:', sessionId);
         // Giving the wheel back to our bot
-
       }
+      // console.log('defer')
       return defer.promise;
+
+    },
+    Welcome(request) {
+      console.log('welcome')
+        // console.log(request)
+      var sessionId = request.sessionId;
+      var context = request.context;
+      var entities = request.entities;
+      var greeting = firstEntityValue(entities, 'greeting');
+      // delete context.greeting;
+      return new Promise(function(resolve, reject) {
+        console.log('context')
+        console.log(context)
+        if (context.greeting) delete context.greeting;
+        if (context.number) delete context.number;
+        if (context.password) delete context.password;
+        if (context.group_name) delete context.group_name;
+        console.log('greeting')
+        console.log(greeting)
+        const fbUserID = sessions[sessionId].fbid;
+        // var defer = Q.defer()
+        if (fbUserID) {
+          var image1 = "http://s3.amazonaws.com/saveoneverything_assets/assets/images/icons/food_dining_icon.png";
+          var image2 = "http://www.tastelikehome.co.za/wp-content/uploads/2015/10/cpg-foods-icon.png";
+          var qr1 = fb.createQuickReplies("Only You", "individual", image1);
+          var qr2 = fb.createQuickReplies("Groups", "group", image2);
+          var qr = [qr1, qr2];
+
+
+          var message = fb.quickReplyMessage("You want to order for ", qr);
+          fb.reply(message, fbUserID)
+        } else {
+
+        }
+        context.group_name = true
+          // return resolve({ name: 'name' })
+        return resolve(context)
+      })
+    },
+    GetGroupName({ sessionId, context, entities }) {
+      console.log('\nGetGroupName')
+      console.log(context)
+      console.log(entities)
+      var temp = context
+      if (temp.group_name) {
+        return new Promise(function(resolve, reject) {
+          db.checkIfGroupNameExists(entities.group_name[0].value)
+            .then(function(result) {
+              console.log(result)
+              if (result.length === 0) {
+                console.log('[messenger.js - 182] ')
+                return resolve({ group_name: entities.group_name[0].value, password: true });
+              } else if (result.length > 0) {
+                console.log('already exists')
+                context = {}
+                context['done'] = true
+                var text1 = "gralpha"
+                console.log('[messenger.js - 190] ' + text1)
+                console.log('already exists')
+                context = {}
+                console.log(context)
+                const fbUserID = sessions[sessionId].fbid;
+                delete sessions[sessionId];
+                context['done'] = true
+                var message = fb.textMessage('Sorry. This group name already exists. Please try with some different name.')
+                fb.reply(message, fbUserID)
+                  .then(function() {
+                    var sessionId = findOrCreateSession(fbUserID);
+                    return wit.runActions(
+                      sessionId, // the user's current session
+                      text1, // the user's message
+                      context // the user's current session state
+                    ).then((context) => {
+                      if (context['done']) {
+                        delete sessions[sessionId];
+                      }
+                      sessions[sessionId].context = context;
+                    })
+                  })
+              }
+            })
+        })
+      } else {
+        console.log('[messenger.js - 214]')
+        return new Promise(function(resolve, reject) {
+          db.checkIfGroupNameExists(entities.group_name[0].value)
+            .then(function(result) {
+              console.log(result.length)
+              if (result.length === 0) {
+                console.log('[messenger.js - 221] ')
+                return resolve({ group_name: entities.group_name[0].value, password: true });
+              } else if (result.length > 0) {
+                console.log('[messenger.js - 225] ')
+                console.log('already exists')
+                context = {}
+                console.log(context)
+                const fbUserID = sessions[sessionId].fbid;
+                delete sessions[sessionId];
+                context['done'] = true
+                var message = fb.textMessage('Sorry. This group name already exists. Please try with some different name.')
+                fb.reply(message, fbUserID)
+                  .then(function() {
+                    var sessionId = findOrCreateSession(fbUserID);
+                    return wit.runActions(
+                      sessionId, // the user's current session
+                      text1, // the user's message
+                      context // the user's current session state
+                    ).then((context) => {
+                      if (context['done']) {
+                        delete sessions[sessionId];
+                      }
+                      sessions[sessionId].context = context;
+                    })
+                  })
+
+              }
+            })
+            // 
+        })
+      }
+    },
+    GetGroupPassword({ sessionId, context, entities }) {
+      console.log('\nGetGroupPassword')
+      console.log(context)
+      var temp = context
+      var gn = context.group_name
+      if (temp.password = true) {
+        return new Promise(function(resolve, reject) {
+          if (context.greeting) { delete context.greeting };
+          if (context.password) { delete context.password };
+          if (context.group_name) { /*delete context.group_name*/ };
+          console.log(entities)
+          console.log(gn)
+          context.password = entities.number[0].value || entities.password[0].value
+          console.log(sessionId)
+          const fbUserID = sessions[sessionId].fbid;
+          // var  senderID = 
+          console.log(context)
+          var c = {}
+          var GroupId;
+          // return resolve(c);
+          return db.createNewGroup(context)
+            .then(function(result) {
+              console.log(result)
+              GroupId = result
+              console.log(GroupId)
+              return db.getUserId(fbUserID)
+            })
+            .then(function(result) {
+              console.log('userid ' + result[0].id)
+              console.log('GroupId')
+              console.log(GroupId)
+              return db.assignNewGroupToUser(GroupId, result[0].id)
+            })
+            .then(function() {
+              implement.sendSuccessForAddNewGroup(fbUserID, gn)
+            })
+        });
+      } else {
+        return new Promise(function(resolve, reject) {
+          if (context.greeting) { delete context.greeting };
+          if (context.number) { delete context.number };
+          if (context.group_name) { delete context.group_name };
+          // console.log(entities[0])
+          console.log(entities)
+          context.group_name = temp.group_name
+          context.number = entities.number[0].value || entities.password[0].value
+          console.log(context)
+          return resolve(context);
+        });
+      }
     }
+    //,
+    // AddGroup({ sessionId, context, entities }) {
+    //   console.log('\nAdded')
+    //   var temp = context
+    //   return new Promise(function(resolve, reject) {
+    //     if (context.greeting) delete context.greeting;
+    //     if (context.password) delete context.password;
+    //     if (context.group_name) delete context.group_name;
+    //     // console.log(entities[0])
+    //     console.log(context)
+    //       // var context = { password: 'password' }
+    //     return resolve();
+    //     // if (context.greeting) delete context.greeting;
+    //     // if (context.number) delete context.number;
+    //     // if (context.group_name) delete context.group_name;
+    //   })
+    // }
 
 
     // You should implement your custom actions here
     // See https://wit.ai/docs/quickstart
   };
+
+
+  function firstEntityValue(entities, name) {
+    var val = entities && entities[name] &&
+      Array.isArray(entities[name]) &&
+      entities[name].length > 0 &&
+      entities[name][0].value;
+    if (!val) {
+      return null;
+    }
+    return typeof val === 'object' ? val.value : val;
+  }
 
   //==================== Postback Section ============================================================================
   function HandlePostback(payload, sessionId) {
@@ -196,8 +350,10 @@
     else if (payload.toString() == "group") {
       console.log('payload==group')
       var fbUserID = sessions[sessionId].fbid;
-      //  implement.fetchGroupsList(fbUserID)
-    }
+      console.log(fbUserID)
+      console.log('fetchGroupsList')
+      implement.fetchGroupsList(fbUserID)
+    } 
     //
     else if (payload.toString().indexOf(constants.G_CREATE_NEW_GROUP_ORDER) != -1) {
       var fbUserID = sessionId
@@ -207,6 +363,45 @@
       console.log('GroupId ' + GroupId)
       implement.createNewGroupOrder(GroupId, fbUserID)
     }
+    //
+    else if (payload == constants.G_CREATE_NEW_GROUP) {
+      // var fbUserID = sessionId
+      var fbUserID = sessions[sessionId].fbid;
+      console.log(fbUserID)
+      implement.CreateNewGroup(fbUserID)
+    } 
+    //
+    else if (payload == constants.G_JOIN_GROUP) {
+      // var fbUserID = sessionId
+      var fbUserID = sessions[sessionId].fbid;
+      console.log(fbUserID)
+      implement.JoinGroup(fbUserID)
+    }
+    ////
+    else if (payload.indexOf(constants.G_CART) != -1) {
+      // var fbUserID = sessionId
+      var fbUserID = sessions[sessionId].fbid;
+      console.log(fbUserID)
+       var str = payload.split("-");
+      var GroupOrderId = str[1]
+      console.log('GroupOrderId ' + GroupOrderId)
+      // implement.JoinGroup(fbUserID)
+      implement.showGroupCart(GroupOrderId, fbUserID)
+    }
+    ////    ////
+    else if (payload.indexOf(constants.G_REMOVE_ITEM) != -1) {
+      // var fbUserID = sessionId
+      var fbUserID = sessionId;
+      console.log(fbUserID)
+       var str = payload.split("-");
+      var MenuItemId = str[1]
+      var GroupOrderId = str[2]
+      console.log('GroupOrderId ' + GroupOrderId)
+      // implement.JoinGroup(fbUserID)
+      implement.removeItemFromGroupCart(MenuItemId, GroupOrderId, fbUserID)
+     }
+    ////
+
     //
     else if (payload.toString().indexOf(constants.G_RESTAURANT_SELECTED) != -1) {
       var fbUserID = sessionId
@@ -230,6 +425,20 @@
       implement.getMenuItemsForCategory(fbUserID, CategoryId, GroupOrderId)
     }
     //
+    else if (payload.toString().indexOf(constants.G_EDIT_GROUP_ORDER) != -1) {
+      // var fbUserID = sessions[sessionId].fbid;
+      var fbUserID = sessionId;
+      console.log(fbUserID)
+      var str = payload.split("-");
+      var GroupId = str[1]
+      return implement.editGroupOrder(GroupId, fbUserID)
+
+      // var GroupOrderId = str[2]
+      // console.log('CategoryId ' + CategoryId)
+      // console.log('GroupOrderId ' + GroupOrderId)
+      // implement.getMenuItemsForCategory(fbUserID, CategoryId, GroupOrderId)
+    }
+    //
     else if (payload.toString().indexOf(constants.G_ADD_TO_CART) != -1) {
       var fbUserID = sessionId;
       console.log(fbUserID)
@@ -237,12 +446,35 @@
       var MenuItemId = str[1]
       var GroupOrderId = str[2]
       implement.addItemsToGroupCart(fbUserID, MenuItemId, GroupOrderId)
+      .then(function(){
+          GetCategoryIdFromMenuItemID(MenuItemId).then(function(result) {
+            var CategoryId = result[0].category_id;
+            moreOptionsForGroup(sessionId, CategoryId, GroupOrderId);
+          })
+      })
+    }
+    //
+    else if (payload.toString().indexOf(constants.G_ADD_MORE_ITEMS) != -1) {
+     var fbUserID = sessions[sessionId].fbid;
+      console.log(fbUserID)
+      var str = payload.split("-");
+      var CategoryId = str[1]
+      var GroupOrderId = str[2]
+        return GetRestaurantIdFromCategoryId(CategoryId)
+        .then(function(result){
+          var RestaurantId = result[0].restaurant_id
+          console.log(RestaurantId)
+          implement.fetchCategoriesforRestaurant(fbUserID, RestaurantId, GroupOrderId);
+        })
+
+      // var GroupOrderId = str[2]
+      // implement(fbUserID, MenuItemId, GroupOrderId)
     }
     //
     else if (payload.toString() == "new_order") {
       console.log("\n[messenger.js - 155] == new order\n");
+      console.log(sessionId)
       CreateNewOrder(sessionId);
-
     }
 
     //
@@ -411,50 +643,50 @@
           }
         }
         console.log(price_list)
-        var message = {
-          "attachment": {
-            "type": "template",
-            "payload": {
-              "template_type": "generic",
-              "elements": [{
-                "title": result[0].restaurant_name,
-                "item_url": "https://foodiebot.herokuapp.com/",
-                "image_url": result[0].restaurant_image,
-                "subtitle": result[0].restaurant_subtitle,
-                "buttons": [{
-                  "type": "payment",
-                  "title": "buy",
-                  "payload": "DEVELOPER_DEFINED_PAYLOAD",
-                  "payment_summary": {
-                    "currency": "USD",
-                    "payment_type": "FIXED_AMOUNT",
-                    "is_test_payment": true,
-                    "merchant_name": "Food Bot",
-                    "requested_user_info": [
-                      "shipping_address",
-                      "contact_name",
-                      "contact_phone",
-                      "contact_email"
-                    ],
-                    "price_list": price_list
-                  }
-                }]
-              }]
-            }
-          }
-        }
+        // var message = {
+        //   "attachment": {
+        //     "type": "template",
+        //     "payload": {
+        //       "template_type": "generic",
+        //       "elements": [{
+        //         "title": result[0].restaurant_name,
+        //         "item_url": "https://foodiebot.herokuapp.com/",
+        //         "image_url": result[0].restaurant_image,
+        //         "subtitle": result[0].restaurant_subtitle,
+        //         "buttons": [{
+        //           "type": "payment",
+        //           "title": "buy",
+        //           "payload": "DEVELOPER_DEFINED_PAYLOAD",
+        //           "payment_summary": {
+        //             "currency":"USD",
+        //           "payment_type":"FIXED_AMOUNT",
+        //           "is_test_payment" : true, 
+        //           "merchant_name":"Food Bot",
+        //           "requested_user_info":[
+        //             "shipping_address",
+        //             "contact_name",
+        //             "contact_phone",
+        //             "contact_email"
+        //             ],
+        //             "price_list": price_list
+        //           }
+        //         }]
+        //       }]
+        //     }
+        //   }
+        // }
 
-        console.log(message)
-        fb.reply(message, fbUserID)
-          .then(() => null)
-          .catch((err) => {
-            console.error(
-              'Oops! An error occurred while forwarding the response to fbUserID',
-              fbUserID,
-              ':',
-              err.stack || err
-            );
-          })
+        // console.log(message)
+        // fb.reply(message, fbUserID)
+        //   .then(() => null)
+        //   .catch((err) => {
+        //     console.error(
+        //       'Oops! An error occurred while forwarding the response to fbUserID',
+        //       fbUserID,
+        //       ':',
+        //       err.stack || err
+        //     );
+        //   })
 
       })
       // console.log(fbUserID)
@@ -493,6 +725,7 @@
       //if user has empty cart, then add a new order
       console.log('*********************************************************' + rows.length)
       if (rows.length == 0) {
+        console.log('hi')
         return AddNewOrder(fbUserID, status).then(function(err, data) {
           var isAdded = false;
           if (err) {
@@ -581,7 +814,8 @@
 
   function getMenuItemsForCategory(fbUserID, CategoryId) {
     var fb_ID = sessions[fbUserID].fbid;
-    return FetchMenuItemsForCategories(CategoryId).then(function(result) {
+    return FetchMenuItemsForCategories(CategoryId)
+    .then(function(result) {
       if (result.length != 0) {
         var elements = [];
         for (var i = 0; i < result.length; i++) {
@@ -601,6 +835,9 @@
       } else {
         console.log('No menu items selected');
       }
+    })
+    .then(function(){
+
     })
   }
 
@@ -779,6 +1016,11 @@
   }
 
 
+  // function createNewGroup = function (fbUserID) {
+  //   // body...
+  //   // fb.createWebViewButton('Create New Order')
+  // }
+
   //=================================functions Implementation====================END======================
 
   //===============================Adapter method calls ==========================================
@@ -814,8 +1056,10 @@
   }
 
   function AddNewOrder(fbUserID, status) {
-
+    console.log('AddNewOrder')
     return db.getUserId(fbUserID).then(function(res) {
+      // console.log('db.getUserId')
+      // console.log(res)
       if (res.length == 0) {
         return res;
       } else {
@@ -950,14 +1194,13 @@
 
   // Setting up our bot
   const wit = new Wit({
-    accessToken: WIT_TOKEN,
+    accessToken: '3TNX4RYRXE2AEHGEQWBIEHMR33QUL6VY',
     actions,
     logger: new log.Logger(log.INFO)
   });
 
   // Starting our webserver and putting it all together
   const app = express();
-
 
   var allowCrossDomain = function(req, res, next) {
     res.header('Access-Control-Allow-Origin', '*');
@@ -980,8 +1223,6 @@
     });
     next();
   });
-
-
 
   // Webhook setup
   app.get('/webhook', (req, res) => {
@@ -1006,14 +1247,10 @@
       data.entry.forEach(entry => {
         // console.log('entry: '+entry)
         entry.messaging.forEach(event => {
-          console.log('\n[messenger.js - 450] event================ > ' + JSON.stringify(event))
-
-          //var isPostback = Object.keys(event).indexOf("postback") != -1;
-          //console.log("====event from fb "+JSON.stringify(event));
           var sender = event.sender.id
-          console.log("------------460------------" + sender)
+            // console.log("------------460------------" + sender)
           if (event.postback) {
-            console.log("\n[messenger.js - 457] ========= > a postback is called  ----> " + JSON.stringify(event.postback));
+            // console.log("\n[messenger.js - 457] ========= > a postback is called  ----> " + JSON.stringify(event.postback));
             HandlePostback(event.postback.payload, event.sender.id);
 
           } else if (event.message) {
@@ -1021,21 +1258,43 @@
             // Yay! We got a new message!
             // We retrieve the Facebook user ID of the sender
             const sender = event.sender.id;
-            console.log('\n==================sender_id = ' + sender)
-              // if (sender = '367555883633598') {}
-              // We retrieve the user's current session, or create one if it doesn't exist
-              // This is needed for our bot to figure out the conversation history
-              // else {
+
             const sessionId = findOrCreateSession(sender);
-            console.log("sessions[sessionId].fbid - " + sessions[sessionId].fbid)
-            console.log('[messenger.js] - 471 sessionId ' + JSON.stringify(sessionId))
-              // We retrieve the message content
-            const { text, attachments, quick_reply } = event.message;
+            // console.log('[messenger.js] - 471 sessionId ' + JSON.stringify(sessionId))
+            // We retrieve the message content
+            const { text, attachments, quick_reply, is_echo } = event.message;
             if (quick_reply) {
               //console.log("===quick reply called");
               var payload = quick_reply.payload;
               if (payload) {
+                // if (payload === constants.G_CREATE_NEW_GROUP) {
+                //   // sessions[sessionId].context = {type:'username'}
+                //   var text1 = "gralpha"
+                //   wit.runActions(
+                //       sessionId, // the user's current session
+                //       text1, // the user's message
+                //       sessions[sessionId].context // the user's current session state
+                //     ).then((context) => {
+                //       // Our bot did everything it has to do.
+                //       // Now it's waiting for further messages to proceed.
+                //       console.log('Waiting for next user messages');
+
+                //       // Based on the session state, you might want to reset the session.
+                //       // This depends heavily on the business logic of your bot.
+                //       // Example:
+                //       // if (context['done']) {
+                //       //   delete sessions[sessionId];
+                //       // }
+
+                //       // Updating the user's czurrent session state
+                //       sessions[sessionId].context = context;
+                //     })
+                //     .catch((err) => {
+                //       console.error('Oops! Got an error from Wit: ', err.stack || err);
+                //     })
+                // } else {
                 HandlePostback(payload, sessionId);
+                // }
               }
             } else if (attachments) {
               // We received an attachment
@@ -1045,23 +1304,15 @@
               // var payload = attachments.
               // fb.reply(fb.textMessage('Sorry I can only process text messages for now.'),sender)
               //   .catch(console.error);
+            } else if (is_echo) {
+              // console.log('is_echo')
+              // console.log('Recieved echo for user')
+              return;
             } else if (text) {
-              // We received a text message
-
-              // Let's forward the message to the Wit.ai Bot Engine
-              // This will run all actions until our bot has nothing left to do
-
+              console.log('context')
+                // sessions[sessionId].context= {username: 'username'}
               checkControlOfChat(sessionId, text);
-              console.log('run Actions - sessionId - ' + sessionId)
-
-          //     if (text.toString().toUpperCase() == 'HEY' || text.toString().toUpperCase() == 'HELLO' || text.toString().toUpperCase() == 'HI') {
-          //   // var fbUserID = sessions[sessionId].fbid
-          //   // console.log(fbUserID);
-          //   runActions(sessionId);
-          // } else {
-          //   console.log('Sorry, I could not understand what you want ! Please input again')
-          // }
-
+              console.log(sessions[sessionId].context)
               wit.runActions(
                   sessionId, // the user's current session
                   text, // the user's message
@@ -1069,6 +1320,8 @@
                 ).then((context) => {
                   // Our bot did everything it has to do.
                   // Now it's waiting for further messages to proceed.
+                  // console.log('\n\ncontext\n\n')
+                  // console.log(context)
                   console.log('Waiting for next user messages');
 
                   // Based on the session state, you might want to reset the session.
@@ -1127,27 +1380,4 @@
 
   app.listen(PORT);
   console.log('Listening on :' + PORT + '...');
-
-
-  //============== printing line number
-  // Object.defineProperty(global, '__stack', {
-  //   get: function() {
-  //     var orig = Error.prepareStackTrace;
-  //     Error.prepareStackTrace = function(_, stack) {
-  //       return stack;
-  //     };
-  //     var err = new Error;
-  //     Error.captureStackTrace(err, arguments.callee);
-  //     var stack = err.stack;
-  //     Error.prepareStackTrace = orig;
-  //     return stack;
-  //   }
-  // });
-
-  // Object.defineProperty(global, '__line', {
-  //   get: function() {
-  //     return __stack[1].getLineNumber();
-  //   }
-  // });
-
 })();

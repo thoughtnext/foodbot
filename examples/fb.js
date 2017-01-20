@@ -21,6 +21,31 @@ function imageMessage(url) {
   }
 }
 
+
+function createWebViewButton(url, title, ratio) {
+  return {
+    "type": "web_url",
+    "url": url,
+    "title": title,
+    "webview_height_ratio": ratio
+      // ,
+      // "messenger_extensions": true,  
+      // "fallback_url" : url
+  }
+}
+
+function buttonMessage(text, buttons) {
+  return {
+    attachment: {
+      type: "template",
+      payload: {
+        template_type: "button",
+        text: text,
+        buttons: buttons
+      }
+    }
+  }
+}
 //--------------------------------------------------------------------------------
 function carouselMessage(elements) {
   return {
@@ -67,12 +92,19 @@ function createQuickReplies(title, payload, image) {
     "image_url": image
   }
 }
+function createQuickReply(title, payload) {
+  return {
+    "content_type": "text",
+    "title": title,
+    "payload": payload
+  }
+}
 
-// function createWebViewButton(title, url, webview_height_ratio){
-//     return {
+// function createWebViewButton(title, url, webview_height_ratio) {
+//   return {
 //     "type": "web_url",
 //     "title": title,
-//     "url" : url,
+//     "url": url,
 //     "webview_height_ratio": webview_height_ratio
 //   }
 // }
@@ -81,10 +113,10 @@ function createQuickReplies(title, payload, image) {
 //--------------------------------------------------------------------------------
 function reply(message, senderId) {
   var deferred = Q.defer();
-  console.log("===sending message to: ", senderId);
+  // console.log("===sending message to: ", senderId);
   //const requestId = dashbot.logOutgoing(requestData);
 
-  const FB_PAGE_TOKEN = process.env.FB_PAGE_TOKEN || 'EAANUKloOsDgBAFN4JJgRPDq6lX1SMku2X6aD46EUMhlXDqihnQLNYMxxB8ZC8yr1IXeOVmbkUNtEwd47JGPL32nPj9g4w3Iaeh4ZAKpIGnSezakNZAdCbI763KpP6GjudzdCgu4mgNfujZCV9DYg6mJdzgnjwQk3DyWu7RppTG6hyLGZB5iCU';
+  const FB_PAGE_TOKEN = process.env.FB_PAGE_TOKEN || 'EAAO6VdlcrtYBAJhEzDUfHA9zfcurVpsi9A8rK0jD70FNk8SBjEnmzPeZCoLRQuTYdAzXVhGufbeiewMPajXlTe49PZCCZA8fCZAfgqZBJQQkTqTB4iBJJf7Xy16yopaZCjjfCMNr1cFVGk3w8xZCfUGrZAldtUkOrsOsb8zeH1ZA3LgZDZD';
   const requestData = {
     url: 'https://graph.facebook.com/v2.6/me/messages',
     qs: { access_token: FB_PAGE_TOKEN },
@@ -113,7 +145,7 @@ function reply(message, senderId) {
       deferred.reject(err);
     } else {
       if (response.statusCode == 200) {
-        console.log("===sent message to FB");
+        // console.log("===sent message to FB");
         //dashbot.logOutgoingResponse(requestId, err, response);
         deferred.resolve(body);
       } else {
@@ -127,7 +159,7 @@ function reply(message, senderId) {
 
 
 function notifyout(message, senderId) {
-  const FB_PAGE_TOKEN = process.env.FB_PAGE_TOKEN || 'EAANUKloOsDgBAN48BZBNlIqTZAYCbfzxuQdrmNEFVmdqrluPFZAGMr7GpEH0ItxtPA5zi9ImtOr8WCMJCoJEAYNxsuyZBbVc4vwfiDAiE9JoUN9dESFIpcZCyhDWEUL1ljzGDKNfvZBUNGda24zIE2hESwTSwmziuvik4SMnfTFAZDZD';
+  const FB_PAGE_TOKEN = process.env.FB_PAGE_TOKEN || 'EAAO6VdlcrtYBAJhEzDUfHA9zfcurVpsi9A8rK0jD70FNk8SBjEnmzPeZCoLRQuTYdAzXVhGufbeiewMPajXlTe49PZCCZA8fCZAfgqZBJQQkTqTB4iBJJf7Xy16yopaZCjjfCMNr1cFVGk3w8xZCfUGrZAldtUkOrsOsb8zeH1ZA3LgZDZD';
   const requestData = {
     url: 'https://graph.facebook.com/v2.6/me/messages',
     qs: { access_token: FB_PAGE_TOKEN },
@@ -153,3 +185,6 @@ exports.reply = reply;
 exports.notifyout = notifyout;
 exports.createQuickReplies = createQuickReplies;
 exports.quickReplyMessage = quickReplyMessage;
+exports.createWebViewButton = createWebViewButton;
+exports.buttonMessage = buttonMessage;
+exports.createQuickReply = createQuickReply;

@@ -34,6 +34,7 @@ Adapter.prototype.getBotUser = function(userId) {
   var deferred = Q.defer();
   this.db.getConnection(function(err, connection) {
     if (err) {
+      console.log('error connecting to db')
       deferred.reject(err);
     } else {
       connection.query(query, [], function(err, results) {
@@ -90,6 +91,8 @@ Adapter.prototype.getUserId = function(userId) {
         if (err) {
           deferred.reject(err);
         } else {
+          // var data = JSON.parse(results)
+          // console.log(data.id)
           deferred.resolve(results);
         }
       });
@@ -238,6 +241,7 @@ Adapter.prototype.addItemsToCart = function(ItemId, OrderId) {
   return deferred.promise;
 }
 
+
 Adapter.prototype.getOrderIdFromFbUserId = function(fbId) {
   var orderStatus = 0;
   const query = 'select orders.id from orders join bot_users ON orders.bot_user_id = bot_users.id where bot_users.fb_id = ' + this.db.escape(fbId) + ' and orders.status = ' + orderStatus;
@@ -272,7 +276,7 @@ Adapter.prototype.getRestaurantIdFromMenuItemId = function(MenuItemId) {
       connection.query(query, [], function(err, rows, fields) {
         // console.log('Reading query')
         console.log("\n" + query + "\n")
-        console.log("========================results====================" + JSON.stringify(rows[0]) + /*rows[0] +*/ '\n')
+        console.log("========================results====================" + JSON.stringify(rows) + /*rows[0] +*/ '\n')
         connection.release();
         if (err) {
           deferred.reject(err);
@@ -295,7 +299,7 @@ Adapter.prototype.getRestaurantIdFromCategoryId = function(CategoryId) {
       connection.query(query, [], function(err, rows, fields) {
         // console.log('Reading query')
         console.log("\n" + query + "\n")
-        console.log("========================results====================" + JSON.stringify(rows[0]) + /*rows[0] +*/ '\n')
+        console.log("========================results====================" + JSON.stringify(rows) + /*rows[0] +*/ '\n')
         connection.release();
         if (err) {
           deferred.reject(err);
@@ -318,7 +322,7 @@ Adapter.prototype.getMyCart = function(OrderId) {
       connection.query(query, [], function(err, rows, fields) {
         // console.log('Reading query')
         console.log("\n" + query + "\n")
-        console.log("========================results====================" + JSON.stringify(rows[0]) + /*rows[0] +*/ '\n')
+        console.log("========================results====================" + JSON.stringify(rows) + /*rows[0] +*/ '\n')
         connection.release();
         if (err) {
           deferred.reject(err);
@@ -341,7 +345,7 @@ Adapter.prototype.getCategoryIdFromMenuItemID = function(MenuItemId) {
       connection.query(query, [], function(err, rows, fields) {
         // console.log('Reading query')
         console.log("\n" + query + "\n")
-        console.log("========================results====================" + JSON.stringify(rows[0]) + /*rows[0] +*/ '\n')
+        console.log("========================results====================" + JSON.stringify(rows) + /*rows[0] +*/ '\n')
         connection.release();
         if (err) {
           deferred.reject(err);
@@ -364,7 +368,7 @@ Adapter.prototype.removeItemFromCart = function(MenuItemId, OrderId) {
       connection.query(query, [], function(err, rows, fields) {
         // console.log('Reading query')
         console.log("\n" + query + "\n")
-        console.log("========================results====================" + JSON.stringify(rows[0]) + /*rows[0] +*/ '\n')
+        console.log("========================results====================" + JSON.stringify(rows) + /*rows[0] +*/ '\n')
         connection.release();
         if (err) {
           deferred.reject(err);
@@ -600,7 +604,7 @@ Adapter.prototype.fetchRestaurants = function(res) {
   return deferred.promise;
 }
 
-Adapter.prototype.fetchCategoriesforRestaurant = function(restaurantId, res) {
+Adapter.prototype.FetchCategoriesforRestaurant = function(restaurantId, res) {
   const query = 'SELECT * FROM categories where restaurant_id = ' + restaurantId;
   var deferred = Q.defer();
   this.db.getConnection(function(err, connection) {
@@ -849,29 +853,29 @@ Adapter.prototype.insertNewGroupOrder = function(group_id) {
   var status = 0;
   const query = 'INSERT INTO group_orders (group_id, status) VALUES (' + group_id + ', ' + status + ');'
   console.log(query)
-     var deferred = Q.defer();
-    this.db.getConnection(function(err, connection) {
-      if (err) {
-        deferred.reject(err);
-      } else {
-        connection.query(query, [], function(err, result) {
-          connection.release();
-          console.log(query);
-          if (err) {
-            deferred.reject(err);
-          } else {
-            console.log('result.insertId')
-            console.log(result.insertId)
-            deferred.resolve(result);
-          }
-        });
-      }
-    })
-    return deferred.promise;
+  var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, result) {
+        connection.release();
+        console.log(query);
+        if (err) {
+          deferred.reject(err);
+        } else {
+          console.log('result.insertId')
+          console.log(result.insertId)
+          deferred.resolve(result);
+        }
+      });
+    }
+  })
+  return deferred.promise;
 }
 
 Adapter.prototype.getGroupId = function(group_id) {
-  const query = 'SELECT COUNT(*) as count, groups.name, group_orders.group_id FROM groups INNER JOIN group_orders ON groups.id = group_orders.group_id WHERE group_orders.status = 0 and group_orders.group_id = ' + group_id ;
+  const query = 'SELECT COUNT(*) as count, groups.name, group_orders.group_id FROM groups INNER JOIN group_orders ON groups.id = group_orders.group_id WHERE group_orders.status = 0 and group_orders.group_id = ' + group_id;
   var deferred = Q.defer();
   this.db.getConnection(function(err, connection) {
     if (err) {
@@ -883,7 +887,7 @@ Adapter.prototype.getGroupId = function(group_id) {
         if (err) {
           deferred.reject(err);
         } else {
-          var data = { result: result[0], group_id : group_id  }
+          var data = { result: result[0], group_id: group_id }
           deferred.resolve(data);
         }
       });
@@ -904,7 +908,7 @@ Adapter.prototype.addItemsToGroupCart = function(MenuItemId, GroupOrderId) {
       connection.query(query, [], function(err, rows, fields) {
         // console.log('Reading query')
         console.log("\n" + query + "\n")
-        console.log("========================results====================" + JSON.stringify(rows[0]) + /*rows[0] +*/ '\n')
+        console.log("========================results====================" + JSON.stringify(rows) + /*rows[0] +*/ '\n')
         connection.release();
         if (err) {
           deferred.reject(err);
@@ -917,6 +921,214 @@ Adapter.prototype.addItemsToGroupCart = function(MenuItemId, GroupOrderId) {
   return deferred.promise;
 }
 
+
+Adapter.prototype.createNewGroup = function(group, res) {
+  // console.log(group)
+  var date = +new Date()
+  var created = parseInt(date / 1000)
+  const query = 'INSERT INTO groups (id, name, password, created) VALUES (NULL,' + this.db.escape(group.group_name) + ', ' + this.db.escape(group.password) + ', ' + this.db.escape(created) + ');';
+  var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, rows, fields) {
+        console.log("\n" + query + "\n")
+        console.log("========================results====================" + JSON.stringify(rows) + /*rows[0] +*/ '\n')
+        connection.release();
+        if (err) {
+          res.send({ status: false })
+          deferred.reject(err);
+        } else {
+          res.send({ status: true })
+          deferred.resolve(rows.insertId);
+        }
+      });
+
+    }
+  });
+  return deferred.promise;
+}
+
+Adapter.prototype.assignNewGroupToUser = function(groupId, userId) {
+  console.log(groupId, userId)
+  const query = 'INSERT INTO group_user (group_id, bot_user_id) VALUES (' + this.db.escape(groupId) + ', ' + this.db.escape(userId) + ');';
+  console.log(query)
+  var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, rows, fields) {
+        console.log("\n" + query + "\n")
+        console.log("========================results====================" + JSON.stringify(rows) + /*rows[0] +*/ '\n')
+        connection.release();
+        if (err) {
+          deferred.reject(err);
+        } else {
+          deferred.resolve(rows.insertId);
+        }
+      });
+
+    }
+  });
+  return deferred.promise;
+}
+
+Adapter.prototype.checkIfGroupNameExists = function(group_name, res) {
+  const query = 'SELECT * FROM groups where name = "' + group_name + '"';
+  var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, rows, fields) {
+        console.log("\n" + query + "\n")
+        console.log("========================results====================" + JSON.stringify(rows) + /*rows[0] +*/ '\n')
+        connection.release();
+        if (err) {
+          deferred.reject(err);
+        } else {
+          // console.log(rows)
+          if (rows.length === 0) {
+            res.send({ exists: false })
+            deferred.resolve({ exists: false });
+          } else {
+            res.send({ exists: true })
+            deferred.resolve({ exists: true });
+          }
+        }
+      });
+    }
+  });
+  return deferred.promise;
+}
+
+Adapter.prototype.checkIfGroupExists = function(group_name, password, res) {
+  const query = 'SELECT * FROM groups where name = "' + group_name + '"' + ' AND password = "' + password + '"';
+  var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, rows, fields) {
+        console.log("\n" + query + "\n")
+        console.log("========================results====================" + JSON.stringify(rows) + /*rows[0] +*/ '\n')
+        connection.release();
+        if (err) {
+          deferred.reject(err);
+        } else {
+          if (rows.length === 0) {
+            res.send({ exists: false })
+            deferred.resolve({ exists: false });
+          } else {
+            res.send({ exists: true, data: rows[0] })
+            deferred.resolve({ exists: true });
+          }
+        }
+      });
+    }
+  });
+  return deferred.promise;
+}
+
+Adapter.prototype.checkIfGroupIsAssignedToUser = function(groupId, userId) {
+  const query = 'SELECT * FROM group_user where group_id = "' + groupId + '"' + ' AND bot_user_id = "' + userId + '"';
+  var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, rows, fields) {
+        console.log("\n" + query + "\n")
+        console.log("========================results====================" + JSON.stringify(rows) + /*rows[0] +*/ '\n')
+        connection.release();
+        if (err) {
+          deferred.reject(err);
+        } else {
+          if (rows.length === 0) {
+            // res.send({ exists: false })
+            deferred.resolve({ exists: false });
+          } else {
+            // res.send({ exists: true })
+            deferred.resolve({ exists: true });
+          }
+        }
+      });
+    }
+  });
+  return deferred.promise;
+}
+
+Adapter.prototype.getGroupCart = function(GroupOrderId) {
+  const query = 'SELECT group_cart.quantity, menu_items.id, menu_items.name, menu_items.image, menu_items.description, menu_items.price FROM group_cart JOIN menu_items on group_cart.menu_item_id = menu_items.id WHERE group_cart.group_order_id = ' + GroupOrderId;
+  var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, rows, fields) {
+        // console.log('Reading query')
+        console.log("\n" + query + "\n")
+        console.log("========================results====================" + JSON.stringify(rows) + /*rows[0] +*/ '\n')
+        connection.release();
+        if (err) {
+          deferred.reject(err);
+        } else {
+          deferred.resolve(rows);
+        }
+      });
+    }
+  });
+  return deferred.promise;
+}
+
+Adapter.prototype.getGroupOrderIdFromGroupId = function(GroupId) {
+  const query = 'SELECT group_orders.id FROM group_orders where group_orders.group_id = ' + GroupId + ' AND group_orders.status = 0';
+  var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, rows, fields) {
+        // console.log('Reading query')
+        console.log("\n" + query + "\n")
+        console.log("========================results====================" + JSON.stringify(rows) + /*rows[0] +*/ '\n')
+        connection.release();
+        if (err) {
+          deferred.reject(err);
+        } else {
+          deferred.resolve(rows);
+        }
+      });
+    }
+  });
+  return deferred.promise;
+}
+
+Adapter.prototype.removeItemFromGroupCart = function(MenuItemId, GroupOrderId) {
+  const query = 'DELETE FROM group_cart WHERE group_order_id = ' + GroupOrderId + ' AND menu_item_id = ' + MenuItemId;
+  // const query = 'DELETE gc FROM group_cart as gc, group_orders as go WHERE gc.group_order_id = ' + GroupOrderId + ' AND gc.menu_item_id = ' + MenuItemId + ' AND go.status = 0 AND gc.group_order_id = go.id';
+  var deferred = Q.defer();
+  this.db.getConnection(function(err, connection) {
+    if (err) {
+      deferred.reject(err);
+    } else {
+      connection.query(query, [], function(err, rows, fields) {
+        // console.log('Reading query')
+        console.log("\n" + query + "\n")
+        console.log("========================results====================" + JSON.stringify(rows) + /*rows[0] +*/ '\n')
+        connection.release();
+        if (err) {
+          deferred.reject(err);
+        } else {
+          deferred.resolve(rows);
+        }
+      });
+    }
+  });
+  return deferred.promise;
+}
 
 module.exports = Adapter;
 
