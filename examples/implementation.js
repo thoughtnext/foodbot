@@ -6,7 +6,8 @@
   var AdapterMethods = require('./AdapterMethods.js');
   var constants = require("./payload");
 
-  var baseUrl = "https://3ecdcaa2.ngrok.io/"
+  // var baseUrl = "https://3ecdcaa2.ngrok.io/"
+  var baseUrl = "https://foodbotgroup.herokuapp.com/"
 
   function Implementation() {
     var fetchGroupsList = function(fbUserID) {
