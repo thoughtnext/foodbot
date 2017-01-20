@@ -353,7 +353,7 @@
       console.log(fbUserID)
       console.log('fetchGroupsList')
       implement.fetchGroupsList(fbUserID)
-    } 
+    }
     //
     else if (payload.toString().indexOf(constants.G_CREATE_NEW_GROUP_ORDER) != -1) {
       var fbUserID = sessionId
@@ -364,12 +364,19 @@
       implement.createNewGroupOrder(GroupId, fbUserID)
     }
     //
+    else if (payload == constants.START_ORDERING) {
+      // var fbUserID = sessionId
+      var fbUserID = sessions[sessionId].fbid;
+      console.log(fbUserID)
+      implement.startOrdering(fbUserID)
+    }
+    //
     else if (payload == constants.G_CREATE_NEW_GROUP) {
       // var fbUserID = sessionId
       var fbUserID = sessions[sessionId].fbid;
       console.log(fbUserID)
       implement.CreateNewGroup(fbUserID)
-    } 
+    }
     //
     else if (payload == constants.G_JOIN_GROUP) {
       // var fbUserID = sessionId
@@ -382,10 +389,10 @@
       // var fbUserID = sessionId
       var fbUserID = sessions[sessionId].fbid;
       console.log(fbUserID)
-       var str = payload.split("-");
+      var str = payload.split("-");
       var GroupOrderId = str[1]
       console.log('GroupOrderId ' + GroupOrderId)
-      // implement.JoinGroup(fbUserID)
+        // implement.JoinGroup(fbUserID)
       implement.showGroupCart(GroupOrderId, fbUserID)
     }
     ////    ////
@@ -393,13 +400,13 @@
       // var fbUserID = sessionId
       var fbUserID = sessionId;
       console.log(fbUserID)
-       var str = payload.split("-");
+      var str = payload.split("-");
       var MenuItemId = str[1]
       var GroupOrderId = str[2]
       console.log('GroupOrderId ' + GroupOrderId)
-      // implement.JoinGroup(fbUserID)
+        // implement.JoinGroup(fbUserID)
       implement.removeItemFromGroupCart(MenuItemId, GroupOrderId, fbUserID)
-     }
+    }
     ////
 
     //
@@ -446,22 +453,22 @@
       var MenuItemId = str[1]
       var GroupOrderId = str[2]
       implement.addItemsToGroupCart(fbUserID, MenuItemId, GroupOrderId)
-      .then(function(){
+        .then(function() {
           GetCategoryIdFromMenuItemID(MenuItemId).then(function(result) {
             var CategoryId = result[0].category_id;
             moreOptionsForGroup(sessionId, CategoryId, GroupOrderId);
           })
-      })
+        })
     }
     //
     else if (payload.toString().indexOf(constants.G_ADD_MORE_ITEMS) != -1) {
-     var fbUserID = sessions[sessionId].fbid;
+      var fbUserID = sessions[sessionId].fbid;
       console.log(fbUserID)
       var str = payload.split("-");
       var CategoryId = str[1]
       var GroupOrderId = str[2]
-        return GetRestaurantIdFromCategoryId(CategoryId)
-        .then(function(result){
+      return GetRestaurantIdFromCategoryId(CategoryId)
+        .then(function(result) {
           var RestaurantId = result[0].restaurant_id
           console.log(RestaurantId)
           implement.fetchCategoriesforRestaurant(fbUserID, RestaurantId, GroupOrderId);
@@ -643,38 +650,38 @@
           }
         }
         console.log(price_list)
-        // var message = {
-        //   "attachment": {
-        //     "type": "template",
-        //     "payload": {
-        //       "template_type": "generic",
-        //       "elements": [{
-        //         "title": result[0].restaurant_name,
-        //         "item_url": "https://foodiebot.herokuapp.com/",
-        //         "image_url": result[0].restaurant_image,
-        //         "subtitle": result[0].restaurant_subtitle,
-        //         "buttons": [{
-        //           "type": "payment",
-        //           "title": "buy",
-        //           "payload": "DEVELOPER_DEFINED_PAYLOAD",
-        //           "payment_summary": {
-        //             "currency":"USD",
-        //           "payment_type":"FIXED_AMOUNT",
-        //           "is_test_payment" : true, 
-        //           "merchant_name":"Food Bot",
-        //           "requested_user_info":[
-        //             "shipping_address",
-        //             "contact_name",
-        //             "contact_phone",
-        //             "contact_email"
-        //             ],
-        //             "price_list": price_list
-        //           }
-        //         }]
-        //       }]
-        //     }
-        //   }
-        // }
+          // var message = {
+          //   "attachment": {
+          //     "type": "template",
+          //     "payload": {
+          //       "template_type": "generic",
+          //       "elements": [{
+          //         "title": result[0].restaurant_name,
+          //         "item_url": "https://foodiebot.herokuapp.com/",
+          //         "image_url": result[0].restaurant_image,
+          //         "subtitle": result[0].restaurant_subtitle,
+          //         "buttons": [{
+          //           "type": "payment",
+          //           "title": "buy",
+          //           "payload": "DEVELOPER_DEFINED_PAYLOAD",
+          //           "payment_summary": {
+          //             "currency":"USD",
+          //           "payment_type":"FIXED_AMOUNT",
+          //           "is_test_payment" : true, 
+          //           "merchant_name":"Food Bot",
+          //           "requested_user_info":[
+          //             "shipping_address",
+          //             "contact_name",
+          //             "contact_phone",
+          //             "contact_email"
+          //             ],
+          //             "price_list": price_list
+          //           }
+          //         }]
+          //       }]
+          //     }
+          //   }
+          // }
 
         // console.log(message)
         // fb.reply(message, fbUserID)
@@ -815,30 +822,30 @@
   function getMenuItemsForCategory(fbUserID, CategoryId) {
     var fb_ID = sessions[fbUserID].fbid;
     return FetchMenuItemsForCategories(CategoryId)
-    .then(function(result) {
-      if (result.length != 0) {
-        var elements = [];
-        for (var i = 0; i < result.length; i++) {
-          elements[i] = { title: result[i].name + ' - $' + result[i].price, image_url: result[i].image, subtitle: result[i].description, buttons: [{ type: 'postback', payload: 'Menu_Item_Selected-' + result[i].id, title: 'Add to Cart' }] }
+      .then(function(result) {
+        if (result.length != 0) {
+          var elements = [];
+          for (var i = 0; i < result.length; i++) {
+            elements[i] = { title: result[i].name + ' - $' + result[i].price, image_url: result[i].image, subtitle: result[i].description, buttons: [{ type: 'postback', payload: 'Menu_Item_Selected-' + result[i].id, title: 'Add to Cart' }] }
+          }
+          var message = fb.carouselMessage(elements);
+          return fb.reply(message, fb_ID)
+            .then(() => null)
+            .catch((err) => {
+              console.error(
+                'Oops! An error occurred while forwarding the response to fbUserID',
+                fbUserID,
+                ':',
+                err.stack || err
+              );
+            });
+        } else {
+          console.log('No menu items selected');
         }
-        var message = fb.carouselMessage(elements);
-        return fb.reply(message, fb_ID)
-          .then(() => null)
-          .catch((err) => {
-            console.error(
-              'Oops! An error occurred while forwarding the response to fbUserID',
-              fbUserID,
-              ':',
-              err.stack || err
-            );
-          });
-      } else {
-        console.log('No menu items selected');
-      }
-    })
-    .then(function(){
+      })
+      .then(function() {
 
-    })
+      })
   }
 
   function moreOptionsQuickReplies(fbUserID, CategoryId) {
@@ -1309,34 +1316,49 @@
               // console.log('Recieved echo for user')
               return;
             } else if (text) {
-              console.log('context')
-                // sessions[sessionId].context= {username: 'username'}
+              // console.log('context')
+              // sessions[sessionId].context= {username: 'username'}
               checkControlOfChat(sessionId, text);
-              console.log(sessions[sessionId].context)
-              wit.runActions(
-                  sessionId, // the user's current session
-                  text, // the user's message
-                  sessions[sessionId].context // the user's current session state
-                ).then((context) => {
-                  // Our bot did everything it has to do.
-                  // Now it's waiting for further messages to proceed.
-                  // console.log('\n\ncontext\n\n')
-                  // console.log(context)
-                  console.log('Waiting for next user messages');
+              var fbUserID = sessions[sessionId].fbid;
+              if (text.toLowerCase() == "hey" || text.toLowerCase() == "hi" || text.toLowerCase() == "hello") {
+                var message = fb.textMessage('Hi. Welcome to foodbot. We are currently serving in Boston area only.')
+                return fb.reply(message, fbUserID)
+                  .then(function() {
+                    var image1 = "http://s3.amazonaws.com/saveoneverything_assets/assets/images/icons/food_dining_icon.png";
+                    var image2 = "http://www.tastelikehome.co.za/wp-content/uploads/2015/10/cpg-foods-icon.png";
+                    var qr1 = fb.createQuickReplies("Start Ordering", "START_ORDERING", image1);
+                    var qr2 = fb.createQuickReplies("Join Group", "G_JOIN_GROUP", image2);
+                    var qr = [qr1, qr2];
+                    var message = fb.quickReplyMessage("What do you wanna do ? ", qr);
+                    fb.reply(message, fbUserID)
 
-                  // Based on the session state, you might want to reset the session.
-                  // This depends heavily on the business logic of your bot.
-                  // Example:
-                  // if (context['done']) {
-                  //   delete sessions[sessionId];
-                  // }
+                  })
+              }
+              // console.log(sessions[sessionId].context)
+              // wit.runActions(
+              //     sessionId, // the user's current session
+              //     text, // the user's message
+              //     sessions[sessionId].context // the user's current session state
+              //   ).then((context) => {
+              //     // Our bot did everything it has to do.
+              //     // Now it's waiting for further messages to proceed.
+              //     // console.log('\n\ncontext\n\n')
+              //     // console.log(context)
+              //     console.log('Waiting for next user messages');
 
-                  // Updating the user's current session state
-                  sessions[sessionId].context = context;
-                })
-                .catch((err) => {
-                  console.error('Oops! Got an error from Wit: ', err.stack || err);
-                })
+              //     // Based on the session state, you might want to reset the session.
+              //     // This depends heavily on the business logic of your bot.
+              //     // Example:
+              //     // if (context['done']) {
+              //     //   delete sessions[sessionId];
+              //     // }
+
+              //     // Updating the user's current session state
+              //     sessions[sessionId].context = context;
+              //   })
+              // .catch((err) => {
+              //   console.error('Oops! Got an error from Wit: ', err.stack || err);
+              // })
             }
             // }
           } else {

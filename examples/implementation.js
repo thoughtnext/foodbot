@@ -182,7 +182,7 @@
       var message = fb.textMessage('You have successfully created a new group ')
       return fb.reply(message, fbUserID)
         .then(function() {
-          var message = fb.textMessage('Group name - '+groupName + '\nPIN - '+password)
+          var message = fb.textMessage('Group name - ' + groupName + '\nPIN - ' + password)
           return fb.reply(message, fbUserID)
         })
         .then(function() {
@@ -267,6 +267,16 @@
 
     }
 
+    var startOrdering = function(fbUserID) {
+      var image1 = "http://s3.amazonaws.com/saveoneverything_assets/assets/images/icons/food_dining_icon.png";
+      var image2 = "http://www.tastelikehome.co.za/wp-content/uploads/2015/10/cpg-foods-icon.png";
+      var qr1 = fb.createQuickReplies("Only You", "individual", image1);
+      var qr2 = fb.createQuickReplies("Groups", "group", image2);
+      var qr = [qr1, qr2];
+      var message = fb.quickReplyMessage("You want to order for ", qr);
+      fb.reply(message, fbUserID)
+    }
+
     var editGroupOrder = function(GroupId, fbUserID) {
       return db.getGroupOrderIdFromGroupId(GroupId)
         .then(function(result) {
@@ -309,6 +319,7 @@
       showGroupCart: showGroupCart,
       moreOptionsForGroup: moreOptionsForGroup,
       editGroupOrder: editGroupOrder,
+      startOrdering: startOrdering,
       removeItemFromGroupCart: removeItemFromGroupCart
     }
   }
